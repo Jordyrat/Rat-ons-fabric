@@ -1,106 +1,64 @@
 package com.ratons.features.instances.dungeons
 
-import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.data.IslandType
-import at.hannibal2.skyhanni.events.LorenzChatEvent
-import at.hannibal2.skyhanni.events.LorenzRenderWorldEvent
-import at.hannibal2.skyhanni.events.LorenzWorldChangeEvent
-import at.hannibal2.skyhanni.features.dungeon.DungeonAPI
-import at.hannibal2.skyhanni.utils.LorenzColor
-import at.hannibal2.skyhanni.utils.LorenzVec
-import at.hannibal2.skyhanni.utils.RenderUtils.drawString
-import at.hannibal2.skyhanni.utils.TimeUtils.format
-import com.ratons.Ratons
-import com.ratons.events.ServerTickEvent
-import com.ratons.modules.RatModule
+import com.ratons.config.ConfigManager
+import com.ratons.data.ChatEvents
+import com.ratons.data.SkyBlockState
 import com.ratons.utils.ChatUtils
-import com.ratons.utils.RatUtils.isZero
-import com.ratons.utils.RatUtils.tick
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+import com.ratons.utils.TimeFormat.shortFormat
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
+import net.minecraft.client.Minecraft
+import net.minecraft.resources.Identifier
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-@RatModule
+/**
+ * Watches Necron's phase message, waits out the four seconds before relics spawn, and puts
+ * the remaining time on the HUD. The 1.8.9 version drew the text at each relic's world
+ * position; the HUD keeps the timing signal without depending on a specific render hook.
+ */
 object RelicSpawnTimer {
 
-    private val config get() = Ratons.feature.instancesConfig.dungeonsCategory.relicSpawnTimer
+    private val config get() = ConfigManager.config.dungeons
 
-    private const val START_MESSAGE = "§4[BOSS] Necron§r§c: §r§cARGH!"
+    private const val NPC_PREFIX = "[BOSS] Necron"
+    private const val START_MESSAGE = "ARGH!"
 
-    private var messagesSentAmount = 0
-    private var timer = 0.seconds
-    private var relic: Relic? = null
+    private val elementId = Identifier.fromNamespaceAndPath("ratons", "relic_timer")
 
-    @SubscribeEvent
-    fun onWorldChange(event: LorenzWorldChangeEvent) {
-        messagesSentAmount = 0
-        timer = 0.seconds
-        relic = null
+    private var messagesSent = 0
+    private var remaining: Duration = Duration.ZERO
+
+    fun register() {
+        ChatEvents.register { message ->
+            if (!enabled()) return@register
+            if (!message.contains(NPC_PREFIX) || !message.contains(START_MESSAGE)) return@register
+            messagesSent++
+            if (messagesSent != 2) return@register
+            ChatUtils.debug("Starting relic timer")
+            remaining = 4.seconds
+        }
+
+        HudElementRegistry.addLast(elementId, HudElement { graphics, _ ->
+            if (!enabled() || remaining <= Duration.ZERO) return@HudElement
+            val client = Minecraft.getInstance()
+            val text = "§dRelics: ${remaining.shortFormat()}"
+            val x = (graphics.guiWidth() - client.font.width(text)) / 2
+            graphics.text(client.font, text, x, 40, 0xFFFFFF, true)
+        })
     }
 
-    @SubscribeEvent
-    fun onChat(event: LorenzChatEvent) {
-        if (!isEnabled()) return
-        if (START_MESSAGE == event.message) {
-            startTimer()
+    fun tick() {
+        if (remaining > Duration.ZERO) {
+            remaining = (remaining - 50.milliseconds).coerceAtLeast(Duration.ZERO)
         }
     }
 
-    @HandleEvent(onlyOnIsland = IslandType.CATACOMBS)
-    fun onServerTick(event: ServerTickEvent) {
-        timer = timer.tick()
+    fun reset() {
+        messagesSent = 0
+        remaining = Duration.ZERO
     }
 
-    private fun startTimer() {
-        ++messagesSentAmount
-        if (messagesSentAmount != 2) return
-        ChatUtils.debug("Starting Relic timer")
-        timer = 4.seconds
-        relic = Relic.getRelic()
-    }
-
-    @SubscribeEvent
-    fun onRenderWorld(event: LorenzRenderWorldEvent) {
-        if (!isEnabled()) return
-        val relic = relic ?: return
-        if (timer.isZero()) return
-        val text = relic.color.getChatColor() + timer.format(showMilliSeconds = true)
-        event.drawString(relic.location.up(2.0), text, true)
-    }
-
-    private enum class Relic(val location: LorenzVec, val color: LorenzColor, private val dungeonClass: DungeonAPI.DungeonClass) {
-        PURPLE(
-            LorenzVec(56, 8, 132),
-            LorenzColor.DARK_PURPLE,
-            DungeonAPI.DungeonClass.HEALER
-        ),
-        GREEN(
-            LorenzVec(20, 6, 94),
-            LorenzColor.GREEN,
-            DungeonAPI.DungeonClass.TANK
-        ),
-        RED(
-            LorenzVec(20, 6, 59),
-            LorenzColor.RED,
-            DungeonAPI.DungeonClass.BERSERK
-        ),
-        BLUE(
-            LorenzVec(91, 6, 94),
-            LorenzColor.BLUE,
-            DungeonAPI.DungeonClass.MAGE
-        ),
-        ORANGE(
-            LorenzVec(92, 6, 56),
-            LorenzColor.GOLD,
-            DungeonAPI.DungeonClass.ARCHER
-        ),
-        ;
-
-        companion object {
-            fun getRelic() = entries.find { it.dungeonClass == DungeonAPI.playerClass }
-        }
-    }
-
-    private fun isEnabled() =
-        DungeonAPI.inDungeon() && DungeonAPI.isOneOf("M7") && DungeonAPI.inBossRoom && config
-
+    private fun enabled() = config.relicSpawnTimer && SkyBlockState.inDungeon && SkyBlockState.floor == "M7"
 }

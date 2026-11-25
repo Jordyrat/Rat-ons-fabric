@@ -1,56 +1,68 @@
 package com.ratons.features.instances
 
-import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.events.InventoryCloseEvent
-import at.hannibal2.skyhanni.events.InventoryOpenEvent
-import at.hannibal2.skyhanni.events.RenderInventoryItemTipEvent
-import at.hannibal2.skyhanni.utils.InventoryUtils
-import at.hannibal2.skyhanni.utils.ItemUtils.getLore
-import at.hannibal2.skyhanni.utils.RegexUtils.find
-import com.ratons.Ratons
-import com.ratons.modules.RatModule
-import net.minecraft.item.ItemStack
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+import com.ratons.config.ConfigManager
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.gui.screens.inventory.MenuAccess
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.item.ItemStack
 
-@RatModule
+/**
+ * SkyHanni let a mod replace the stack count drawn on an item. Without that hook the party
+ * size is drawn over each entry's icon, which is the same information in the same place.
+ */
 object PartyFinderFeatures {
 
-    private val config get() = Ratons.feature.instancesConfig.partyFinder
+    private val config get() = ConfigManager.config.partyFinder
 
-    private val partyPattern = "'s Party$".toPattern()
-    private val dungeonPartyPattern = "^§7Dungeon: ".toPattern()
+    private val partyNamePattern = Regex("'s Party$")
+    private val dungeonPartyPattern = Regex("^Dungeon: ")
 
-    private val stackSizes = mutableMapOf<Int, Int>()
+    private const val GUI_WIDTH = 176
+    private const val GUI_HEIGHT = 166
 
-    @SubscribeEvent
-    fun onInventoryOpen(event: InventoryOpenEvent) {
-        partySize(event.inventoryItems)
-    }
+    fun register() {
+        ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen !is AbstractContainerScreen<*>) return@register
+            if (!config.partySizeDisplay || screen.title.string != "Party Finder") return@register
 
-    @HandleEvent(onlyOnSkyblock = true)
-    fun onRenderItemTip(event: RenderInventoryItemTipEvent) {
-        val slot = event.slot
-        if (!config.partySizeDisplay || slot.slotNumber != slot.slotIndex) return
+            val sizes = scan(screen)
+            if (sizes.isEmpty()) return@register
 
-        event.stackTip = stackSizes[slot.slotIndex]?.toString() ?: return
-    }
-
-    @SubscribeEvent
-    fun onInventoryClose(event: InventoryCloseEvent) {
-        stackSizes.clear()
-    }
-
-    private fun partySize(inventory: Map<Int, ItemStack>) {
-        if (InventoryUtils.openInventoryName() != "Party Finder" || !config.partySizeDisplay) return
-        for ((slot, item) in inventory){
-            if (partyPattern.find(item.displayName)) {
-
-                val isDungeon = dungeonPartyPattern.find(item.getLore()[0])
-
-                val openSlots = item.getLore().count { it == "§8 Empty" }
-
-                stackSizes[slot] = (if (isDungeon) 5 else 4) - openSlots
+            ScreenEvents.afterForeground(screen).register { rendered, graphics, _, _, _ ->
+                val left = (rendered.width - GUI_WIDTH) / 2
+                val top = (rendered.height - GUI_HEIGHT) / 2
+                for ((slotIndex, size) in sizes) {
+                    val slot = (rendered as MenuAccess<*>).menu.slots.getOrNull(slotIndex) ?: continue
+                    graphics.text(
+                        net.minecraft.client.Minecraft.getInstance().font,
+                        size.toString(),
+                        left + slot.x,
+                        top + slot.y + 9,
+                        0xFFFFFF,
+                        true,
+                    )
+                }
             }
         }
+    }
+
+    private fun scan(screen: AbstractContainerScreen<*>): Map<Int, Int> {
+        val sizes = mutableMapOf<Int, Int>()
+        val menu = screen.menu
+        for (slot in 0 until menu.slots.size) {
+            val stack = menu.slots[slot].item
+            if (stack.isEmpty) continue
+            sizes[slot] = partySize(stack) ?: continue
+        }
+        return sizes
+    }
+
+    private fun partySize(stack: ItemStack): Int? {
+        if (!partyNamePattern.containsMatchIn(stack.hoverName.string)) return null
+        val lore = stack.get(DataComponents.LORE)?.lines()?.map { it.string } ?: return null
+        val isDungeon = lore.firstOrNull()?.let { dungeonPartyPattern.containsMatchIn(it) } ?: false
+        val openSlots = lore.count { it == "§8 Empty" }
+        return (if (isDungeon) 5 else 4) - openSlots
     }
 }

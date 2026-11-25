@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "Hypixel SkyBlock quality-of-life features for modern Minecraft.",
+  "authors": [
+    "Jordyrat"
+  ],
+  "license": "GPL-3.0",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.ratons.Ratons"
+    ]
+  },
+  "mixins": [
+    "mixins.ratons.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "fabric-language-kotlin": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25"
+  }
+}
