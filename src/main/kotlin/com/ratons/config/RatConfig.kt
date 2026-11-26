@@ -10,6 +10,13 @@ import com.teamresourceful.resourcefulconfigkt.api.ConfigKt
  * property is persisted by the library and drawn as a widget in the config screen, which is
  * what `/rat` opens.
  */
+/** What the launch-time update check is allowed to do. */
+enum class UpdateMode {
+    None,
+    Chat,
+    Automatic,
+}
+
 object RatConfig : ConfigKt("ratons/config") {
 
     override val name: TranslatableValue = TranslatableValue.literal("Rat-ons")
@@ -17,9 +24,12 @@ object RatConfig : ConfigKt("ratons/config") {
         TranslatableValue.literal("Hypixel SkyBlock quality-of-life features")
     override val links: Array<ResourcefulConfigLink> = emptyArray()
 
-    var autoUpdates by boolean(true) {
-        translation = "Auto Updates"
-        description = TranslatableValue.literal("Check for a newer release at launch and install it when you close the game.")
+    var updateMode by enum(UpdateMode.Automatic) {
+        translation = "Update Mode"
+        description = TranslatableValue.literal(
+            "None skips the update check, Chat tells you when a release is out, " +
+                "Automatic installs it when you close the game.",
+        )
     }
 
     init {

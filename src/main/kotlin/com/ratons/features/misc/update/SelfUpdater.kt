@@ -33,15 +33,20 @@ object SelfUpdater {
      * a development client runs from build output, and a launcher-managed install may keep mods
      * somewhere we should not write to.
      */
-    fun ownJar(): Path? {
+    fun ownJar(): Path? = runCatching {
         val loader = FabricLoader.getInstance()
         if (loader.isDevelopmentEnvironment) return null
-        val roots = loader.getModContainer(Ratons.MOD_ID).map { it.rootPaths }.orElse(emptyList())
-        val jar = roots
-            .filter { it.fileName.toString().endsWith(".jar") && Files.isRegularFile(it) }
+        val container = loader.getModContainer(Ratons.MOD_ID).orElse(null) ?: return null
+        // A jar mod's root path is the root of its own zip filesystem rather than the file,
+        // so the origin paths are what name the jar on disk.
+        val paths = runCatching { container.origin.paths }.getOrDefault(emptyList()) +
+            runCatching { container.rootPaths }.getOrDefault(emptyList())
+        val jar = paths
+            .filter { it.fileName?.toString()?.endsWith(".jar") == true && Files.isRegularFile(it) }
+            .distinct()
             .singleOrNull() ?: return null
-        return jar.takeIf { it.parent?.fileName?.toString() == "mods" }
-    }
+        jar.takeIf { it.parent?.fileName?.toString() == "mods" }
+    }.getOrNull()
 
     /**
      * Downloads [assetUrl] and schedules the swap for when the game exits.
@@ -50,25 +55,26 @@ object SelfUpdater {
     fun stageUpdate(version: String, assetUrl: String): String? {
         val current = ownJar() ?: return "this is not a jar install"
         val pending = current.resolveSibling("ratons-$version.jar.pending")
-        return runCatching {
-            val request = HttpRequest.newBuilder(URI.create(assetUrl))
-                .header("User-Agent", "Rat-ons")
-                .timeout(Duration.ofMinutes(2))
-                .GET()
-                .build()
-            val response = http.send(request, HttpResponse.BodyHandlers.ofFile(pending))
-            require(response.statusCode() == 200) { "GitHub returned ${response.statusCode()}" }
-            require(isRatonsJar(pending)) { "the download is not a Rat-ons jar" }
-            val reached = current.resolveSibling("ratons-$version.jar")
-            val script = writeHelper(current, pending, reached)
-            ProcessBuilder(script.toString()).redirectErrorStream(true).start()
-            Ratons.logger.info("Staged $version at $pending; it replaces $current when the game closes")
-            null
-        }.getOrElse { error ->
-            Files.deleteIfExists(pending)
-            Ratons.logger.warn("Could not stage the $version update", error)
-            error.message ?: error.javaClass.simpleName
-        }
+        val failure = runCatching { download(version, assetUrl, current, pending) }.exceptionOrNull()
+        if (failure == null) return null
+        Ratons.logger.warn("Could not stage the $version update", failure)
+        runCatching { Files.deleteIfExists(pending) }
+        return failure.message ?: failure.javaClass.simpleName
+    }
+
+    private fun download(version: String, assetUrl: String, current: Path, pending: Path) {
+        val request = HttpRequest.newBuilder(URI.create(assetUrl))
+            .header("User-Agent", "Rat-ons")
+            .timeout(Duration.ofMinutes(2))
+            .GET()
+            .build()
+        val response = http.send(request, HttpResponse.BodyHandlers.ofFile(pending))
+        require(response.statusCode() == 200) { "GitHub returned ${response.statusCode()}" }
+        require(isRatonsJar(pending)) { "the download is not a Rat-ons jar" }
+        val reached = current.resolveSibling("ratons-$version.jar")
+        val script = writeHelper(current, pending, reached)
+        ProcessBuilder(script.toString()).redirectErrorStream(true).start()
+        Ratons.logger.info("Staged $version at $pending; it replaces $current when the game closes")
     }
 
     private fun isRatonsJar(file: Path): Boolean = runCatching {
@@ -90,16 +96,14 @@ object SelfUpdater {
               timeout /t 2 /nobreak >nul
               goto wait
             )
-            move /Y "$pending" "$target" >nul 2>&1
-            del "$current" >nul 2>&1
+            move /Y "$pending" "$target" >nul 2>&1 && del "$current" >nul 2>&1
             del "%~f0" >nul 2>&1
             """.trimIndent().replace("\n", "\r\n")
         } else {
             """
             #!/bin/sh
             while kill -0 $pid 2>/dev/null; do sleep 2; done
-            mv -f "$pending" "$target"
-            rm -f "$current"
+            mv -f "$pending" "$target" && rm -f "$current"
             rm -f "${'$'}0"
             """.trimIndent()
         }

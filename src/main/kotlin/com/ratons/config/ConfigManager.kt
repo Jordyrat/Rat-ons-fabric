@@ -3,6 +3,7 @@ package com.ratons.config
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.ratons.Ratons
+import com.ratons.config.UpdateMode
 import com.ratons.utils.ErrorManager
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import com.teamresourceful.resourcefulconfig.api.loader.Configurator
@@ -70,7 +71,9 @@ object ConfigManager {
             return if (value.isJsonPrimitive) value.asBoolean else null
         }
 
-        flag("about", "autoUpdates")?.let { RatConfig.autoUpdates = it }
+        flag("about", "autoUpdates")?.let {
+            RatConfig.updateMode = if (it) UpdateMode.Automatic else UpdateMode.None
+        }
         flag("about", "debug")?.let { DevConfig.debug = it }
         flag("instancesConfig", "dungeonsCategory", "relicSpawnTimer")?.let { DungeonsConfig.relicSpawnTimer = it }
         flag("instancesConfig", "dungeonsCategory", "closeSecretChest")?.let { DungeonsConfig.closeSecretChest = it }

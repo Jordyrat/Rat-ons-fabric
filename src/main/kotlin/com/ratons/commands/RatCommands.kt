@@ -5,6 +5,7 @@ import com.ratons.config.AutoRefillConfig
 import com.ratons.config.ConfigManager
 import com.ratons.config.DevConfig
 import com.ratons.config.RatConfig
+import com.ratons.config.UpdateMode
 import com.ratons.config.DungeonsConfig
 import com.ratons.config.MiscConfig
 import com.ratons.config.PartyFinderConfig
@@ -75,7 +76,6 @@ object RatCommands {
             read = { MiscConfig.itemAgeData },
             write = { on -> MiscConfig.itemAgeData = on },
         ),
-        Toggle("autoupdates", "About > Auto Updates", read = { RatConfig.autoUpdates }, write = { on -> RatConfig.autoUpdates = on }),
         Toggle("debug", "Dev > Debug", read = { DevConfig.debug }, write = { on -> DevConfig.debug = on }),
         Toggle(
             "debugchat",
@@ -119,6 +119,16 @@ object RatCommands {
                         ChatUtils.chat("Checking for updates...")
                         1
                     },
+                ).then(
+                    literal("update-mode").then(
+                        argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
+                            UpdateMode.entries.forEach { builder.suggest(it.name.lowercase()) }
+                            builder.buildFuture()
+                        }.executes { context ->
+                            setUpdateMode(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode"))
+                            1
+                        },
+                    ),
                 ),
             )
 
@@ -149,6 +159,16 @@ object RatCommands {
         ChatUtils.chat("§7 Area: §f${com.ratons.data.SkyBlockState.area ?: "unknown"}")
         ChatUtils.chat("§7 Dungeon floor: §f${com.ratons.data.SkyBlockState.floor ?: "none"}")
         ChatUtils.chat("§7 Class: §f${com.ratons.data.SkyBlockState.playerClass?.name ?: "unknown"}")
+    }
+
+    private fun setUpdateMode(value: String) {
+        val mode = UpdateMode.entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: run {
+            ChatUtils.userError("Unknown mode '$value'. Use none, chat or automatic.")
+            return
+        }
+        RatConfig.updateMode = mode
+        ConfigManager.save()
+        ChatUtils.chat("§aUpdate mode is now §e${mode.name}§a.")
     }
 
     private fun toggle(feature: String) {

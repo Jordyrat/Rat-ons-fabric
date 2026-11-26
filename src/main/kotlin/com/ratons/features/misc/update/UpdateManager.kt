@@ -3,6 +3,7 @@ package com.ratons.features.misc.update
 import com.google.gson.JsonParser
 import com.ratons.Ratons
 import com.ratons.config.RatConfig
+import com.ratons.config.UpdateMode
 import com.ratons.utils.ChatUtils
 import com.ratons.utils.SemanticVersion
 import java.net.URI
@@ -28,13 +29,16 @@ object UpdateManager {
     private var announced = false
 
     fun onTick() {
-        if (checked || !RatConfig.autoUpdates) return
+        if (checked || RatConfig.updateMode == UpdateMode.None) return
         if (net.minecraft.client.Minecraft.getInstance().player == null) return
         checked = true
-        checkForUpdates()
+        check(manual = false)
     }
 
-    fun checkForUpdates() {
+    /** The explicit command, which checks even when the mode is off. */
+    fun checkForUpdates() = check(manual = true)
+
+    private fun check(manual: Boolean) {
         Thread.ofVirtual().name("ratons-update-check").start {
             runCatching { fetchLatestRelease() }
                 .onSuccess { release ->
@@ -42,16 +46,22 @@ object UpdateManager {
                     if (SemanticVersion.of(release.tag) <= current) return@onSuccess
                     if (announced) return@onSuccess
                     announced = true
-                    deliver(release)
+                    deliver(release, manual)
                 }
                 .onFailure { Ratons.logger.warn("Update check failed", it) }
         }
     }
 
-    private fun deliver(release: Release) {
-        val staged = release.assetUrl?.let { SelfUpdater.stageUpdate(release.tag, it) }
+    private fun deliver(release: Release, manual: Boolean) {
+        val mode = RatConfig.updateMode
+        if (mode == UpdateMode.None && !manual) return
+        val staged = if (mode == UpdateMode.Automatic) {
+            release.assetUrl?.let { SelfUpdater.stageUpdate(release.tag, it) }
+        } else {
+            null
+        }
         net.minecraft.client.Minecraft.getInstance().execute {
-            if (staged == null && release.assetUrl != null) {
+            if (staged == null && mode == UpdateMode.Automatic && release.assetUrl != null) {
                 ChatUtils.chat("§aVersion §e${release.tag}§a downloaded and will replace this jar when you close the game.")
                 return@execute
             }
