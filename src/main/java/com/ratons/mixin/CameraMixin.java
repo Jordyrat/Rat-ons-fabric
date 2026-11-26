@@ -31,8 +31,8 @@ public abstract class CameraMixin implements CameraAccessor {
 
         Camera camera = (Camera) (Object) this;
         accessor.ratons$prepareCullFrustum(
-                accessor.ratons$createProjectionMatrixForCulling(),
                 camera.getViewRotationMatrix(new Matrix4f()),
+                accessor.ratons$createProjectionMatrixForCulling(),
                 position);
     }
 }

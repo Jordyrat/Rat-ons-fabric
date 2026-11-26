@@ -167,8 +167,9 @@ object RatCompanion {
     )
 
     /**
-     * The rat's parts, built with +Y upwards and the head towards −Z. Sitting lifts the chest and
-     * folds the hind legs under the body, so the rat perches rather than lying flat.
+     * The rat's parts, built with +Y upwards and the head towards −Z. Its legs fold under the body
+     * in both poses, so it rests on its belly with its feet tucked; alertness only decides whether
+     * it lies flat or lifts its chest and perches.
      */
     internal class RatModel {
         val root: ModelPart = LayerDefinition.create(shape(), 64, 64).bakeRoot()
@@ -185,9 +186,10 @@ object RatCompanion {
 
         fun pose(snapshot: Snapshot) {
             val alert = snapshot.alertness
+            val lie = 1f - alert
 
             body.xRot = 0.5f * alert
-            body.y = -0.3f * alert
+            body.y = -0.3f * alert - 0.12f * lie
 
             head.xRot = -0.35f * alert + snapshot.lookPitch
             head.yRot = snapshot.lookYaw
@@ -198,11 +200,10 @@ object RatCompanion {
             tail.xRot = 0.35f * alert + 0.15f
             tail.yRot = snapshot.tailSway
 
-            val fold = 1.25f * alert
-            backLeft.xRot = fold
-            backRight.xRot = fold
-            frontLeft.xRot = -1.05f * alert
-            frontRight.xRot = -1.05f * alert
+            backLeft.xRot = 1.25f
+            backRight.xRot = 1.25f
+            frontLeft.xRot = -1.05f
+            frontRight.xRot = -1.05f
             frontLeft.zRot = -0.25f * alert
             frontRight.zRot = 0.25f * alert
         }

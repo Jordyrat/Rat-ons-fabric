@@ -19,6 +19,7 @@ public interface CameraAccessor {
     @Invoker("createProjectionMatrixForCulling")
     Matrix4f ratons$createProjectionMatrixForCulling();
 
+    /** Same argument order as {@code Camera.prepareCullFrustum}: view, then projection. */
     @Invoker("prepareCullFrustum")
-    void ratons$prepareCullFrustum(Matrix4fc projection, Matrix4f viewRotation, Vec3 position);
+    void ratons$prepareCullFrustum(Matrix4fc viewRotation, Matrix4f projection, Vec3 position);
 }
