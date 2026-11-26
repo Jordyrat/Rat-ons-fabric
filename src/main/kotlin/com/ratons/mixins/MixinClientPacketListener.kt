@@ -11,8 +11,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
 @Mixin(ClientPacketListener::class)
 class MixinClientPacketListener {
 
-    @Inject(method = ["handleSystemChat"], at = [At("HEAD")])
+    // RETURN, not HEAD: handleSystemChat starts with ensureRunningOnSameThread, which hops to
+    // the client thread and re-runs the handler. A HEAD hook would fire on the network thread,
+    // and twice per message whenever the hop happens.
+    @Inject(method = ["handleSystemChat"], at = [At("RETURN")])
     private fun `ratons$onSystemChat`(packet: ClientboundSystemChatPacket, callback: CallbackInfo) {
+        if (packet.overlay()) return
         ChatEvents.onMessage(packet.content().string)
     }
 }

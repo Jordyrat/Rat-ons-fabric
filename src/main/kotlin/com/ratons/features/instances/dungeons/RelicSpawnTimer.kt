@@ -29,6 +29,7 @@ object RelicSpawnTimer {
 
     private var messagesSent = 0
     private var remaining: Duration = Duration.ZERO
+    private var lastFloor: String? = null
 
     fun register() {
         ChatEvents.register { message ->
@@ -50,6 +51,13 @@ object RelicSpawnTimer {
     }
 
     fun tick() {
+        // Entering, leaving or changing a dungeon never disconnects the client, so the counter
+        // is reset on the floor changing rather than only on disconnect.
+        val floor = SkyBlockState.floor
+        if (floor != lastFloor) {
+            lastFloor = floor
+            reset()
+        }
         if (remaining > Duration.ZERO) {
             remaining = (remaining - 50.milliseconds).coerceAtLeast(Duration.ZERO)
         }

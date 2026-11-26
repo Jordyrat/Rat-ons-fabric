@@ -14,6 +14,8 @@ object ItemUtils {
         "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL",
     )
 
+    private val COLOR_CODES = Regex("§.")
+
     private fun ItemStack.extraAttributes(): CompoundTag {
         val tag = get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return CompoundTag()
         return if (tag.contains("ExtraAttributes")) tag.getCompound("ExtraAttributes").orElse(CompoundTag()) else tag
@@ -41,9 +43,16 @@ object ItemUtils {
 
     fun ItemStack.isDungeonItem(): Boolean = loreLines().any { it.contains("DUNGEON ") }
 
-    /** Index of the rarity line, which is where the extra tooltip lines get inserted above. */
-    fun ItemStack.rarityLoreIndex(lore: List<String>): Int {
-        val rarity = RARITY_NAMES.firstOrNull { name -> lore.any { it.contains(name, ignoreCase = true) } } ?: return -1
-        return lore.indexOfLast { it.contains(rarity, ignoreCase = true) }
-    }
+    /**
+     * Index of the rarity footer. Hypixel ends a tooltip with a line like
+     * `LEGENDARY DUNGEON SWORD`, so the line has to start with the rarity and stay upper case;
+     * matching any substring would hit ability text such as "a rare chance".
+     */
+    fun ItemStack.rarityLoreIndex(lore: List<String>): Int =
+        lore.indexOfLast { line ->
+            val plain = plain(line).uppercase()
+            RARITY_NAMES.any { rarity -> plain == rarity || plain.startsWith("$rarity ") }
+        }
+
+    private fun plain(line: String) = line.replace(COLOR_CODES, "").trim()
 }

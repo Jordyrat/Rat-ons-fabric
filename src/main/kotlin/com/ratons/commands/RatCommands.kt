@@ -14,31 +14,70 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal
  */
 object RatCommands {
 
-    private val toggles: Map<String, Pair<String, (Boolean) -> Unit>> = mapOf(
-        "relictimer" to ("Dungeons > Relic Spawn Timer" to { on ->
-            ConfigManager.update { it.copy(dungeons = it.dungeons.copy(relicSpawnTimer = on)) }
-        }),
-        "closechest" to ("Dungeons > Close Secret Chest" to { on ->
-            ConfigManager.update { it.copy(dungeons = it.dungeons.copy(closeSecretChest = on)) }
-        }),
-        "autorefill" to ("Instances > Auto Refill" to { on ->
-            ConfigManager.update { it.copy(autoRefill = it.autoRefill.copy(enabled = on)) }
-        }),
-        "partyfinder" to ("Instances > Party Size Display" to { on ->
-            ConfigManager.update { it.copy(partyFinder = it.partyFinder.copy(partySizeDisplay = on)) }
-        }),
-        "dungeonitemdata" to ("Misc > Dungeon Item Data" to { on ->
-            ConfigManager.update { it.copy(misc = it.misc.copy(dungeonItemData = on)) }
-        }),
-        "itemagedata" to ("Misc > Item Age Data" to { on ->
-            ConfigManager.update { it.copy(misc = it.misc.copy(itemAgeData = on)) }
-        }),
-        "autoupdates" to ("About > Auto Updates" to { on ->
-            ConfigManager.update { it.copy(autoUpdates = on) }
-        }),
-        "debug" to ("About > Debug" to { on ->
-            ConfigManager.update { it.copy(debug = on) }
-        }),
+    private val toggles: Map<String, Toggle> = listOf(
+        Toggle(
+            "relictimer",
+            "Dungeons > Relic Spawn Timer",
+            read = { it.dungeons.relicSpawnTimer },
+            write = { c, on -> c.copy(dungeons = c.dungeons.copy(relicSpawnTimer = on)) },
+        ),
+        Toggle(
+            "closechest",
+            "Dungeons > Close Secret Chest",
+            read = { it.dungeons.closeSecretChest },
+            write = { c, on -> c.copy(dungeons = c.dungeons.copy(closeSecretChest = on)) },
+        ),
+        Toggle(
+            "autorefill",
+            "Instances > Auto Refill",
+            read = { it.autoRefill.enabled },
+            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(enabled = on)) },
+        ),
+        Toggle(
+            "refillpearls",
+            "Instances > Auto Refill > Ender Pearls",
+            read = { it.autoRefill.pearls },
+            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(pearls = on)) },
+        ),
+        Toggle(
+            "refilldecoys",
+            "Instances > Auto Refill > Decoys",
+            read = { it.autoRefill.decoys },
+            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(decoys = on)) },
+        ),
+        Toggle(
+            "refilljerrys",
+            "Instances > Auto Refill > Inflatable Jerrys",
+            read = { it.autoRefill.jerrys },
+            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(jerrys = on)) },
+        ),
+        Toggle(
+            "partyfinder",
+            "Instances > Party Size Display",
+            read = { it.partyFinder.partySizeDisplay },
+            write = { c, on -> c.copy(partyFinder = c.partyFinder.copy(partySizeDisplay = on)) },
+        ),
+        Toggle(
+            "dungeonitemdata",
+            "Misc > Dungeon Item Data",
+            read = { it.misc.dungeonItemData },
+            write = { c, on -> c.copy(misc = c.misc.copy(dungeonItemData = on)) },
+        ),
+        Toggle(
+            "itemagedata",
+            "Misc > Item Age Data",
+            read = { it.misc.itemAgeData },
+            write = { c, on -> c.copy(misc = c.misc.copy(itemAgeData = on)) },
+        ),
+        Toggle("autoupdates", "About > Auto Updates", read = { it.autoUpdates }, write = { c, on -> c.copy(autoUpdates = on) }),
+        Toggle("debug", "About > Debug", read = { it.debug }, write = { c, on -> c.copy(debug = on) }),
+    ).associateBy { it.name }
+
+    private class Toggle(
+        val name: String,
+        val label: String,
+        val read: (com.ratons.config.RatConfig) -> Boolean,
+        val write: (com.ratons.config.RatConfig, Boolean) -> com.ratons.config.RatConfig,
     )
 
     fun register() {
@@ -86,10 +125,9 @@ object RatCommands {
 
     private fun listFeatures() {
         ChatUtils.chat("§e${Ratons.MOD_NAME} ${Ratons.version} §7features:")
-        toggles.forEach { (name, entry) ->
-            val enabled = isEnabled(name)
-            val state = if (enabled) "§aenabled" else "§7disabled"
-            ChatUtils.clickable("§7 - §f$name §8(${entry.first}) §8- $state", "/rat toggle $name")
+        toggles.values.forEach { toggle ->
+            val state = if (toggle.read(ConfigManager.config)) "§aenabled" else "§7disabled"
+            ChatUtils.clickable("§7 - §f${toggle.name} §8(${toggle.label}) §8- $state", "/rat toggle ${toggle.name}")
         }
     }
 
@@ -103,27 +141,12 @@ object RatCommands {
 
     private fun toggle(feature: String) {
         val key = feature.lowercase()
-        val entry = toggles[key] ?: run {
+        val toggle = toggles[key] ?: run {
             ChatUtils.userError("Unknown feature '$feature'. Try /rat for the list.")
             return
         }
-        val now = !isEnabled(key)
-        entry.second(now)
-        ChatUtils.chat("§a${entry.first} is now ${if (now) "enabled" else "disabled"}.")
-    }
-
-    private fun isEnabled(feature: String): Boolean {
-        val config = ConfigManager.config
-        return when (feature) {
-            "relictimer" -> config.dungeons.relicSpawnTimer
-            "closechest" -> config.dungeons.closeSecretChest
-            "autorefill" -> config.autoRefill.enabled
-            "partyfinder" -> config.partyFinder.partySizeDisplay
-            "dungeonitemdata" -> config.misc.dungeonItemData
-            "itemagedata" -> config.misc.itemAgeData
-            "autoupdates" -> config.autoUpdates
-            "debug" -> config.debug
-            else -> false
-        }
+        val now = !toggle.read(ConfigManager.config)
+        ConfigManager.update { toggle.write(it, now) }
+        ChatUtils.chat("§a${toggle.label} is now ${if (now) "enabled" else "disabled"}.")
     }
 }

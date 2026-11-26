@@ -1,10 +1,11 @@
 package com.ratons.data
 
 import net.minecraft.client.Minecraft
+import net.minecraft.world.scores.DisplaySlot
 
 /**
- * Stands in for SkyHanni's island/dungeon tracking. Hypixel publishes all of this in the
- * tab list, which is what both mods read; this keeps only what Rat-ons needs.
+ * Stands in for SkyHanni's island/dungeon tracking. Hypixel publishes the area and class in
+ * the tab list and the current floor in the sidebar, so both are read and merged.
  */
 object SkyBlockState {
 
@@ -13,6 +14,7 @@ object SkyBlockState {
     private val areaPattern = Regex("Area: (.+)")
     private val floorPattern = Regex("The Catacombs \\((F\\d|M\\d)\\)")
     private val classPattern = Regex("\\((Berserk|Mage|Archer|Tank|Healer)\\)")
+    private val colorCodes = Regex("§.")
 
     var area: String? = null
         private set
@@ -30,7 +32,7 @@ object SkyBlockState {
     val inDungeon: Boolean get() = floor != null
 
     fun update() {
-        val lines = tabListLines()
+        val lines = sidebarLines() + tabListLines()
         if (lines.isEmpty()) return
         area = lines.firstNotNullOfOrNull { areaPattern.find(it)?.groupValues?.get(1) }
         floor = lines.firstNotNullOfOrNull { floorPattern.find(it)?.groupValues?.get(1) }
@@ -49,6 +51,14 @@ object SkyBlockState {
 
     private fun tabListLines(): List<String> =
         mc.connection?.listedOnlinePlayers?.mapNotNull { it.tabListDisplayName?.string } ?: emptyList()
+
+    private fun sidebarLines(): List<String> {
+        val scoreboard = mc.level?.scoreboard ?: return emptyList()
+        val objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return emptyList()
+        val title = objective.displayName.string.replace(colorCodes, "")
+        val entries = scoreboard.listPlayerScores(objective).map { it.ownerName().string.replace(colorCodes, "") }
+        return listOf(title) + entries
+    }
 
     enum class DungeonClass {
         ARCHER, BERSERK, HEALER, MAGE, TANK;
