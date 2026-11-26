@@ -19,7 +19,7 @@ object RatConfig : ConfigKt("ratons/config") {
 
     var autoUpdates by boolean(true) {
         translation = "Auto Updates"
-        description = TranslatableValue.literal("Check GitHub for a newer release at launch, and say so in chat when there is one.")
+        description = TranslatableValue.literal("Check for a newer release at launch and install it when you close the game.")
     }
 
     init {
