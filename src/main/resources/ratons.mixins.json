@@ -7,7 +7,12 @@
     "AvatarRendererMixin",
     "EntityRenderDispatcherMixin",
     "LivingEntityRendererInvoker",
-    "AvatarRenderStateMixin"
+    "AvatarRenderStateMixin",
+    "CameraMixin",
+    "CameraAccessor",
+    "KeyboardInputMixin",
+    "EntityTurnMixin",
+    "ClientInputAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

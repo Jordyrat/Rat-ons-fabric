@@ -1,7 +1,6 @@
 package com.ratons.features.misc.rat
 
 import com.mojang.blaze3d.vertex.PoseStack
-import com.mojang.math.Axis
 import com.ratons.Ratons
 import com.ratons.config.MiscConfig
 
@@ -45,6 +44,11 @@ object RatCompanion {
 
     internal const val FULL_BRIGHT = 0xF000F0
 
+    private const val ALERT_MIN_TICKS = 180
+    private const val ALERT_SPREAD_TICKS = 60
+    private const val SETTLED_MIN_TICKS = 240
+    private const val SETTLED_SPREAD_TICKS = 240
+
     private val states = ConcurrentHashMap<UUID, RatState>()
     internal val model: RatModel by lazy { RatModel() }
     private var announced = false
@@ -71,13 +75,13 @@ object RatCompanion {
         }
     }
 
-    private enum class Mode { Sitting, Standing }
+    private enum class Mode { Settled, Alert }
 
     /** The animated state of one rat, advanced a tick at a time and read once per frame. */
     internal class RatState {
-        private var mode = Mode.Sitting
-        private var modeTicks = 40 + (0..80).random()
-        private var sitAmount = 1f
+        private var mode = Mode.Settled
+        private var modeTicks = SETTLED_MIN_TICKS + (0..SETTLED_SPREAD_TICKS).random()
+        private var sitAmount = 0f
 
         private var lookYaw = 0f
         private var lookPitch = 0f
@@ -92,7 +96,7 @@ object RatCompanion {
         fun tick() {
             if (--modeTicks <= 0) nextMode()
 
-            val targetSit = if (mode == Mode.Sitting) 1f else 0f
+            val targetSit = if (mode == Mode.Alert) 1f else 0f
             sitAmount += (targetSit - sitAmount) * 0.18f
 
             if (--lookTicks <= 0) pickLookTarget()
@@ -110,14 +114,14 @@ object RatCompanion {
 
         private fun nextMode() {
             mode = when (mode) {
-                Mode.Sitting -> if ((0..3).random() == 0) Mode.Standing else Mode.Sitting
-                Mode.Standing -> Mode.Sitting
+                Mode.Settled -> if ((0..2).random() == 0) Mode.Alert else Mode.Settled
+                Mode.Alert -> Mode.Settled
             }
             modeTicks = when (mode) {
-                Mode.Standing -> 30 + (0..50).random()
-                Mode.Sitting -> 80 + (0..120).random()
+                Mode.Alert -> ALERT_MIN_TICKS + (0..ALERT_SPREAD_TICKS).random()
+                Mode.Settled -> SETTLED_MIN_TICKS + (0..SETTLED_SPREAD_TICKS).random()
             }
-            if (mode == Mode.Standing) {
+            if (mode == Mode.Alert) {
                 targetYaw = 0f
                 targetPitch = 0f
             }
@@ -303,17 +307,14 @@ class RatShoulderLayer(parent: RenderLayerParent<AvatarRenderState, PlayerModel>
         xRot: Float,
     ) {
         val rider = (state as? RatRiderHolder)?.`ratons$getRider`() ?: return
-        if (!RatCompanion.carries(rider)) return
+        if (!RatCompanion.carries(rider) || state.isInvisible) return
 
         if (!MiscConfig.ratCompanion) return
         val snapshot = RatCompanion.snapshotFor(rider)
         ErrorManager.guard("drawing the rat") {
+            val model = getParentModel()
             poseStack.pushPose()
-            poseStack.mulPose(Axis.YP.rotationDegrees(yRot))
-            poseStack.mulPose(Axis.XP.rotationDegrees(xRot))
-            if (state.isCrouching) {
-                poseStack.mulPose(Axis.XP.rotationDegrees(CROUCH_PITCH))
-            }
+            model.head.translateAndRotate(poseStack)
             poseStack.translate(0f, -HEAD_TOP, HEAD_BACK)
             poseStack.scale(1f, -1f, 1f)
             poseStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE)
@@ -330,7 +331,6 @@ class RatShoulderLayer(parent: RenderLayerParent<AvatarRenderState, PlayerModel>
     private companion object {
         const val HEAD_TOP = 0.58f
         const val HEAD_BACK = 0.06f
-        const val CROUCH_PITCH = 28.6f
         const val MODEL_SCALE = 0.8f
     }
 }
