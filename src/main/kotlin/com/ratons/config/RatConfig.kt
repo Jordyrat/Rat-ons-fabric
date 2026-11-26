@@ -27,8 +27,11 @@ object RatConfig : ConfigKt("ratons/config") {
     var updateMode by enum(UpdateMode.Automatic) {
         translation = "Update Mode"
         description = TranslatableValue.literal(
-            "None skips the update check, Notify tells you when a release is out, " +
-                "Automatic installs it when you close the game.",
+            """
+            None: skips the update check entirely.
+            Notify: tells you in chat when a newer release is published.
+            Automatic: downloads it and replaces this jar when you close the game.
+            """.trimIndent(),
         )
     }
 
