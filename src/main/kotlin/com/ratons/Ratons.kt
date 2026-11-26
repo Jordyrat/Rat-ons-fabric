@@ -10,6 +10,7 @@ import com.ratons.features.instances.PartyFinderFeatures
 import com.ratons.features.instances.dungeons.DungeonFeatures
 import com.ratons.features.instances.dungeons.RelicSpawnTimer
 import com.ratons.features.misc.ItemDataDisplay
+import com.ratons.features.misc.rat.RatCompanion
 import com.ratons.features.misc.update.UpdateManager
 import com.ratons.utils.ChatUtils
 import com.ratons.utils.ErrorManager
@@ -27,6 +28,7 @@ class Ratons : ClientModInitializer {
     override fun onInitializeClient() {
         ConfigManager.load()
         UpdateModeRenderer.register()
+        RatCompanion.register()
 
         RatCommands.register()
         ItemDataDisplay.register()
