@@ -90,3 +90,30 @@ jobs:
           else
             gh release create "$TAG" "$jar" --title "$TAG" --notes-file release-notes.md
           fi
+
+  badges:
+    needs: release
+    runs-on: ubuntu-latest
+    name: "Refresh the badges"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - name: Update the download and version badges
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          downloads=$(gh api "repos/$REPO/releases" --paginate --jq '.[].assets[].download_count' | awk '{ total += $1 } END { print total + 0 }')
+          version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          sed -i -E "s|badge/Downloads-[0-9]+-green|badge/Downloads-$downloads-green|" README.md
+          sed -i -E "s|badge/Version-[0-9.]+-blue|badge/Version-$version-blue|" README.md
+          if git diff --quiet README.md; then
+            echo "Badges already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Refresh the download and version badges"
+          git push origin main
