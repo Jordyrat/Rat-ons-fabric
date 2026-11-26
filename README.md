@@ -3,25 +3,23 @@
 <div align="center">
     
 [![Made with Kotlin](https://img.shields.io/badge/Made%20With-Kotlin-purple?style=for-the-badge&logo=kotlin&logocolor=white&color=7F52FF)](https://kotlinlang.org/)
-[![Downloads](https://img.shields.io/github/downloads/jordyrat/Rat-ons/total?style=for-the-badge&logo=github&color=green)](https://github.com/Jordyrat/Rat-ons/releases)
-[![Version](https://img.shields.io/github/v/release/jordyrat/Rat-ons?include_prereleases&display_name=release&style=for-the-badge&label=Version&color=blue)](https://github.com/Jordyrat/Rat-ons/releases)
-[![License](https://img.shields.io/github/license/jordyrat/Rat-ons?style=for-the-badge&label=License)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/Jordyrat/Rat-ons-fabric/total?style=for-the-badge&logo=github&color=green)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![Version](https://img.shields.io/github/v/release/Jordyrat/Rat-ons-fabric?include_prereleases&display_name=release&style=for-the-badge&label=Version&color=blue)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![License](https://img.shields.io/github/license/Jordyrat/Rat-ons-fabric?style=for-the-badge&label=License)](LICENSE)
 
 </div>
 
-<h2>NO LONGER IN-PRODUCTION. ARCHIVED IN-FAVOUR OF A PRIVATE MOD</h2>
-
-A 1.8.9 Minecraft mod made for Hypixel Skyblock. Rat-ons focuses on trying to reduce your modlist with features considered UAYOR (Use At Your Own Risk).
+A Fabric client mod for Minecraft **26.2** made for Hypixel SkyBlock. Rat-ons focuses on trying to reduce your modlist with features considered UAYOR (Use At Your Own Risk).
 
 If you like Rat-ons, please consider Starring!
 
 ## Installation
 1. **Install** [Fabric](https://fabricmc.net/use/) for Minecraft **26.2**, the [Fabric API](https://modrinth.com/mod/fabric-api) and [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin). The last two are prerequisites; Rat-ons does not bundle them.
-2. **Download** the latest release from [Releases](https://github.com/Jordyrat/Rat-ons/releases) into your mods folder.
+2. **Download** the latest release from [Releases](https://github.com/Jordyrat/Rat-ons-fabric/releases) into your mods folder.
 3. **Configure** the mod with `/rat`, or toggle a feature with `/rat toggle <feature>`.
 
-Rat-ons used to be an addon for SkyHanni on 1.8.9. This version targets 26.2 and reads the
-SkyBlock state it needs from the tab list itself, so no companion mod is required.
+Rat-ons used to be an addon for SkyHanni on 1.8.9. This version targets 26.2 and bundles
+[SkyblockAPI](https://github.com/SkyblockAPI/SkyblockAPI), so no companion mod is required.
 
 ## Building
 `./gradlew build` produces the mod jar in `build/libs`. The build needs JDK 25 and Gradle 9.8+
