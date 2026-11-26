@@ -23,7 +23,7 @@ class UpdateModeSwitch(
     private val setter: (UpdateMode) -> Unit,
 ) : AbstractWidget(0, 0, SEGMENT_WIDTH * UpdateMode.entries.size, HEIGHT, Component.empty()) {
 
-    private val labels = UpdateMode.entries.map { it.name.uppercase(Locale.ROOT) }
+    private val labels = UpdateMode.entries.map { SHORT_LABELS.getValue(it) }
 
     override fun extractWidgetRenderState(
         graphics: GuiGraphicsExtractor,
@@ -73,10 +73,14 @@ class UpdateModeSwitch(
         private const val ACTIVE_TEXT = 0xFF727478.toInt()
         private const val IDLE_TEXT = 0xFFFAF9F6.toInt()
 
-        private val SEGMENT_WIDTH: Int
-            get() {
-                val font = Minecraft.getInstance().font
-                return UpdateMode.entries.maxOf { font.width(it.name.uppercase(Locale.ROOT)) } + 16
-            }
+        // The same 40px halves the ON/OFF switch uses: three of them fit the widget column at
+        // the library's smallest window instead of running over the description text.
+        private const val SEGMENT_WIDTH = 40
+
+        private val SHORT_LABELS = mapOf(
+            UpdateMode.None to "NONE",
+            UpdateMode.Notify to "NOTIFY",
+            UpdateMode.Automatic to "AUTO",
+        )
     }
 }
