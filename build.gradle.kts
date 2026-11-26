@@ -34,8 +34,6 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:$loader_version")
     implementation("net.fabricmc.fabric-api:fabric-api:$fabric_api_version")
     implementation("net.fabricmc:fabric-language-kotlin:$language_kotlin_version")
-    // Bundled so the mod loads without the player installing the Kotlin adapter separately.
-    include("net.fabricmc:fabric-language-kotlin:$language_kotlin_version")
 }
 
 tasks.processResources {

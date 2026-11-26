@@ -16,7 +16,7 @@ A 1.8.9 Minecraft mod made for Hypixel Skyblock. Rat-ons focuses on trying to re
 If you like Rat-ons, please consider Starring!
 
 ## Installation
-1. **Install** [Fabric](https://fabricmc.net/use/) for Minecraft **26.2** and the [Fabric API](https://modrinth.com/mod/fabric-api).
+1. **Install** [Fabric](https://fabricmc.net/use/) for Minecraft **26.2**, the [Fabric API](https://modrinth.com/mod/fabric-api) and [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin). The last two are prerequisites; Rat-ons does not bundle them.
 2. **Download** the latest release from [Releases](https://github.com/Jordyrat/Rat-ons/releases) into your mods folder.
 3. **Configure** the mod with `/rat`, or toggle a feature with `/rat toggle <feature>`.
 
