@@ -19,6 +19,8 @@ jobs:
     name: "Publish the jar"
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
@@ -46,4 +48,8 @@ jobs:
             echo "::error::no jar was built"
             exit 1
           fi
-          gh release create "$TAG" "$jar" --title "$TAG" --generate-notes --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$jar" --clobber
+          else
+            gh release create "$TAG" "$jar" --title "$TAG" --generate-notes
+          fi
