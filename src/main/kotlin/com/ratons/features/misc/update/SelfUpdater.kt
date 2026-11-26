@@ -91,19 +91,28 @@ object SelfUpdater {
             """
             @echo off
             :wait
-            tasklist /FI "PID eq $pid" 2>nul | find "$pid" >nul
+            tasklist /FI "PID eq $pid" 2>nul | findstr /R /C:" $pid " >nul
             if not errorlevel 1 (
-              timeout /t 2 /nobreak >nul
+              ping -n 3 127.0.0.1 >nul
               goto wait
             )
-            move /Y "$pending" "$target" >nul 2>&1 && del "$current" >nul 2>&1
+            move /Y "$pending" "$target" >nul 2>&1
+            set /a tries=0
+            :remove
+            if exist "$current" if %tries% lss 30 (
+              del "$current" >nul 2>&1
+              set /a tries+=1
+              ping -n 2 127.0.0.1 >nul
+              goto remove
+            )
             del "%~f0" >nul 2>&1
             """.trimIndent().replace("\n", "\r\n")
         } else {
             """
             #!/bin/sh
             while kill -0 $pid 2>/dev/null; do sleep 2; done
-            mv -f "$pending" "$target" && rm -f "$current"
+            mv -f "$pending" "$target"
+            for _ in $(seq 30); do [ -e "$current" ] || break; rm -f "$current"; sleep 1; done
             rm -f "${'$'}0"
             """.trimIndent()
         }
