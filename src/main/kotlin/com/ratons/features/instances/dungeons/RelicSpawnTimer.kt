@@ -35,7 +35,7 @@ object RelicSpawnTimer {
     fun register() {
         ChatEvents.register { message ->
             if (!enabled()) return@register
-            if (!message.contains(NPC_PREFIX) || !message.contains(START_MESSAGE)) return@register
+            if (!message.startsWith(NPC_PREFIX) || !message.contains(START_MESSAGE)) return@register
             messagesSent++
             if (messagesSent != 2) return@register
             ChatUtils.debug("Starting relic timer")

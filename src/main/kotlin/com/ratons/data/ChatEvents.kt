@@ -17,9 +17,14 @@ object ChatEvents {
         listeners.add(listener)
     }
 
+    private val colorCodes = Regex("§.")
+
     fun subscribe() {
-        SkyBlockAPI.eventBus.register<ChatReceivedEvent> { event ->
-            val message = event.text.trim()
+        // Post, not the base event: the bus walks superclasses, so a listener on
+        // ChatReceivedEvent would also receive its Pre, Post and Sent stages and run three
+        // times for one line.
+        SkyBlockAPI.eventBus.register<ChatReceivedEvent.Post> { event ->
+            val message = event.text.replace(colorCodes, "").trim()
             if (message.isEmpty()) return@register
             for (listener in listeners) {
                 ErrorManager.guard("processing a chat message") { listener(message) }
