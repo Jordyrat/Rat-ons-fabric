@@ -97,6 +97,7 @@ object SelfUpdater {
               goto wait
             )
             move /Y "$pending" "$target" >nul 2>&1
+            if errorlevel 1 goto cleanup
             set /a tries=0
             :remove
             if exist "$current" if %tries% lss 30 (
@@ -105,14 +106,16 @@ object SelfUpdater {
               ping -n 2 127.0.0.1 >nul
               goto remove
             )
+            :cleanup
             del "%~f0" >nul 2>&1
             """.trimIndent().replace("\n", "\r\n")
         } else {
             """
             #!/bin/sh
             while kill -0 $pid 2>/dev/null; do sleep 2; done
-            mv -f "$pending" "$target"
-            for _ in $(seq 30); do [ -e "$current" ] || break; rm -f "$current"; sleep 1; done
+            if mv -f "$pending" "$target"; then
+              for _ in $(seq 30); do [ -e "$current" ] || break; rm -f "$current"; sleep 1; done
+            fi
             rm -f "${'$'}0"
             """.trimIndent()
         }
