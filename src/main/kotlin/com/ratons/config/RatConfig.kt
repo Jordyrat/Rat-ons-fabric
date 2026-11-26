@@ -19,7 +19,7 @@ object RatConfig : ConfigKt("ratons/config") {
 
     var autoUpdates by boolean(true) {
         translation = "Auto Updates"
-        description = TranslatableValue.literal("Check GitHub for a newer release at launch, and say so in chat when there is one.")
+        description = TranslatableValue.literal("Automatically updates when a new version is found.")
     }
 
     init {
@@ -37,12 +37,12 @@ object DungeonsConfig : CategoryKt("dungeons") {
 
     var relicSpawnTimer by boolean(false) {
         translation = "Relic Spawn Timer"
-        description = TranslatableValue.literal("Show a Dragon Relic timer while an M7 run is going.")
+        description = TranslatableValue.literal("Displays a timer for when relics will spawn.")
     }
 
     var closeSecretChest by boolean(false) {
         translation = "Close Secret Chest"
-        description = TranslatableValue.literal("Close the chest screen as soon as a secret chest is opened.")
+        description = TranslatableValue.literal("Automatically closes secret chests when opened.")
     }
 }
 
@@ -52,22 +52,22 @@ object AutoRefillConfig : CategoryKt("autoRefill") {
 
     var enabled by boolean(false) {
         translation = "Enabled"
-        description = TranslatableValue.literal("Top the stack back up before a dungeon or Kuudra run starts.")
+        description = TranslatableValue.literal("Automatically refill items at the start of an instance (Required for below options).")
     }
 
     var pearls by boolean(false) {
         translation = "Refill Ender Pearls"
-        description = TranslatableValue.literal("Count Ender Pearls when refilling.")
+        description = TranslatableValue.literal("Enables auto refill for Ender Pearls.")
     }
 
     var decoys by boolean(false) {
         translation = "Refill Decoys"
-        description = TranslatableValue.literal("Count Decoys when refilling.")
+        description = TranslatableValue.literal("Enables auto refill for Decoys on F4/M4.")
     }
 
     var jerrys by boolean(false) {
         translation = "Refill Inflatable Jerrys"
-        description = TranslatableValue.literal("Count Inflatable Jerrys when refilling.")
+        description = TranslatableValue.literal("Enables auto refill for Inflatable Jerrys on M7.")
     }
 }
 
@@ -77,7 +77,7 @@ object PartyFinderConfig : CategoryKt("partyFinder") {
 
     var partySizeDisplay by boolean(false) {
         translation = "Party Size Display"
-        description = TranslatableValue.literal("Draw the party size over the icon in the party finder list.")
+        description = TranslatableValue.literal("Displays party size as an item stack.")
     }
 }
 
@@ -87,12 +87,12 @@ object MiscConfig : CategoryKt("misc") {
 
     var dungeonItemData by boolean(false) {
         translation = "Dungeon Item Data"
-        description = TranslatableValue.literal("Add the dungeon item data lines to item tooltips.")
+        description = TranslatableValue.literal("Displays data about dungeon items drops in its lore.")
     }
 
     var itemAgeData by boolean(false) {
         translation = "Item Age Data"
-        description = TranslatableValue.literal("Add the item age line to item tooltips.")
+        description = TranslatableValue.literal("Displays an item's age in its lore.")
     }
 }
 
@@ -102,11 +102,11 @@ object DevConfig : CategoryKt("dev") {
 
     var debug by boolean(false) {
         translation = "Debug"
-        description = TranslatableValue.literal("Log what the mod is doing to the game log.")
+        description = TranslatableValue.literal("Developer setting for checking debug messages.")
     }
 
     var debugChat by boolean(false) {
         translation = "Debug Chat Messages"
-        description = TranslatableValue.literal("Print that debug output into chat as well, not just the log.")
+        description = TranslatableValue.literal("Also prints those debug messages into chat.")
     }
 }
