@@ -87,4 +87,8 @@ object MiscConfig : CategoryKt("misc") {
     var itemAgeData by boolean(false) {
         translation = "Item Age Data"
     }
+
+    var debugChat by boolean(false) {
+        translation = "Debug Chat Messages"
+    }
 }

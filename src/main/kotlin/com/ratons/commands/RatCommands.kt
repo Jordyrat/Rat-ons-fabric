@@ -76,6 +76,12 @@ object RatCommands {
         ),
         Toggle("autoupdates", "About > Auto Updates", read = { RatConfig.autoUpdates }, write = { on -> RatConfig.autoUpdates = on }),
         Toggle("debug", "About > Debug", read = { RatConfig.debug }, write = { on -> RatConfig.debug = on }),
+        Toggle(
+            "debugchat",
+            "Misc > Debug Chat Messages",
+            read = { MiscConfig.debugChat },
+            write = { on -> MiscConfig.debugChat = on },
+        ),
     ).associateBy { it.name }
 
     private class Toggle(

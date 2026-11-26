@@ -3,6 +3,7 @@ package com.ratons.config
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.ratons.Ratons
+import com.ratons.utils.ErrorManager
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import com.teamresourceful.resourcefulconfig.api.loader.Configurator
 import com.teamresourceful.resourcefulconfig.api.types.ResourcefulConfig
@@ -34,9 +35,16 @@ object ConfigManager {
     }
 
     fun openScreen(parent: Screen?) {
-        val builder = ResourcefulConfigScreen.make(registered)
-        parent?.let(builder::withParent)
-        Minecraft.getInstance().gui.setScreen(builder.build())
+        // The chat screen closes itself right after a command runs, so anything set here would
+        // be replaced by null within the same call. Opening on the next frame survives that.
+        val client = Minecraft.getInstance()
+        client.execute {
+            ErrorManager.guard("opening the config screen") {
+                val builder = ResourcefulConfigScreen.make(registered)
+                parent?.let(builder::withParent)
+                client.gui.setScreen(builder.build())
+            }
+        }
     }
 
     private fun readLegacy(): JsonObject? {
