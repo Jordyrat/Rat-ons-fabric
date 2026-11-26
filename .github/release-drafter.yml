@@ -15,6 +15,6 @@ include-labels:
   - 'improvement'
   - 'bug'
 template: |
-  This release requires SkyHanni version 0.27.Beta.12
+  This release requires Fabric Language Kotlin 1.14.0 or newer.
 
   $CHANGES

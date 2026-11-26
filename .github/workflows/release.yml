@@ -7,11 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v0.2.0"
+        description: "Existing tag to publish, for example v2.0.0"
         required: true
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   release:
@@ -21,6 +22,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
@@ -38,6 +40,40 @@ jobs:
           fi
       - name: Build
         run: ./gradlew build --stacktrace
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          previous=$(gh release list --repo "$REPO" --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // empty')
+          since="1970-01-01T00:00:00Z"
+          if [ -n "$previous" ] && [ "$previous" != "$TAG" ]; then
+            since=$(gh release view "$previous" --repo "$REPO" --json publishedAt --jq .publishedAt)
+          fi
+
+          filter=$(cat <<'FILTER'
+          def line: "- \(.title) (@\(.author.login) - #\(.number))";
+          def labelled($names): any(.labels[].name; . as $l | $names | index($l));
+          map(select(.mergedAt >= "__SINCE__")) as $prs
+          | {
+              features: [$prs[] | select(labelled(["feature", "enhancement"])) | line],
+              improvements: [$prs[] | select(labelled(["improvement"])) | line],
+              fixes: [$prs[] | select(labelled(["bug"])) | line],
+              other: [$prs[] | select(labelled(["feature", "enhancement", "improvement", "bug"]) | not) | line]
+            }
+          | "This release requires Fabric Language Kotlin 1.14.0 or newer.",
+            (if (.features | length) > 0 then (["", "## New Features"] + .features) | join("\n") else empty end),
+            (if (.improvements | length) > 0 then (["", "## Improvements"] + .improvements) | join("\n") else empty end),
+            (if (.fixes | length) > 0 then (["", "## Bug Fixes"] + .fixes) | join("\n") else empty end),
+            (if (.other | length) > 0 then (["", "## Changes"] + .other) | join("\n") else empty end)
+          FILTER
+          )
+          filter=${filter//__SINCE__/$since}
+
+          gh pr list --repo "$REPO" --state merged --limit 200 \
+            --json number,title,author,labels,mergedAt --jq "$filter" > release-notes.md
+          cat release-notes.md
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -50,6 +86,7 @@ jobs:
           fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$jar" --clobber
+            gh release edit "$TAG" --notes-file release-notes.md
           else
-            gh release create "$TAG" "$jar" --title "$TAG" --generate-notes
+            gh release create "$TAG" "$jar" --title "$TAG" --notes-file release-notes.md
           fi
