@@ -19,7 +19,7 @@ object RatConfig : ConfigKt("ratons/config") {
 
     var autoUpdates by boolean(true) {
         translation = "Auto Updates"
-        description = TranslatableValue.literal("Automatically updates when a new version is found.")
+        description = TranslatableValue.literal("Check GitHub for a newer release at launch, and say so in chat when there is one.")
     }
 
     init {
@@ -62,7 +62,7 @@ object AutoRefillConfig : CategoryKt("autoRefill") {
 
     var decoys by boolean(false) {
         translation = "Refill Decoys"
-        description = TranslatableValue.literal("Enables auto refill for Decoys on F4/M4.")
+        description = TranslatableValue.literal("Enables auto refill for Decoys on F4.")
     }
 
     var jerrys by boolean(false) {
