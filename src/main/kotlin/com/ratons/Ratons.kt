@@ -2,7 +2,7 @@ package com.ratons
 
 import com.ratons.commands.RatCommands
 import com.ratons.config.ConfigManager
-import com.ratons.config.RatConfig
+import com.ratons.config.DevConfig
 import com.ratons.data.ChatEvents
 import com.ratons.features.instances.AutoRefill
 import com.ratons.features.instances.PartyFinderFeatures
@@ -51,7 +51,7 @@ class Ratons : ClientModInitializer {
     private fun onChat(message: String) {
         if (message.contains("Starting a new dungeon")) AutoRefill.onDungeonStart()
         if (message.contains("I will go and fish up Kuudra")) AutoRefill.onKuudraStart()
-        if (RatConfig.debug) ChatUtils.debug("chat: $message")
+        if (DevConfig.debug) ChatUtils.debug("chat: $message")
     }
 
     companion object {

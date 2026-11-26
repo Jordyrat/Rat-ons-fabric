@@ -21,15 +21,12 @@ object RatConfig : ConfigKt("ratons/config") {
         translation = "Auto Updates"
     }
 
-    var debug by boolean(false) {
-        translation = "Debug"
-    }
-
     init {
         category(DungeonsConfig)
         category(AutoRefillConfig)
         category(PartyFinderConfig)
         category(MiscConfig)
+        category(DevConfig)
     }
 }
 
@@ -86,6 +83,15 @@ object MiscConfig : CategoryKt("misc") {
 
     var itemAgeData by boolean(false) {
         translation = "Item Age Data"
+    }
+}
+
+object DevConfig : CategoryKt("dev") {
+
+    override val name: TranslatableValue = TranslatableValue.literal("Dev")
+
+    var debug by boolean(false) {
+        translation = "Debug"
     }
 
     var debugChat by boolean(false) {

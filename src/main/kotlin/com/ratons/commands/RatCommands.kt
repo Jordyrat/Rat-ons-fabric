@@ -3,10 +3,11 @@ package com.ratons.commands
 import com.ratons.Ratons
 import com.ratons.config.AutoRefillConfig
 import com.ratons.config.ConfigManager
+import com.ratons.config.DevConfig
+import com.ratons.config.RatConfig
 import com.ratons.config.DungeonsConfig
 import com.ratons.config.MiscConfig
 import com.ratons.config.PartyFinderConfig
-import com.ratons.config.RatConfig
 import com.ratons.features.misc.update.UpdateManager
 import com.ratons.utils.ChatUtils
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -75,12 +76,12 @@ object RatCommands {
             write = { on -> MiscConfig.itemAgeData = on },
         ),
         Toggle("autoupdates", "About > Auto Updates", read = { RatConfig.autoUpdates }, write = { on -> RatConfig.autoUpdates = on }),
-        Toggle("debug", "About > Debug", read = { RatConfig.debug }, write = { on -> RatConfig.debug = on }),
+        Toggle("debug", "Dev > Debug", read = { DevConfig.debug }, write = { on -> DevConfig.debug = on }),
         Toggle(
             "debugchat",
-            "Misc > Debug Chat Messages",
-            read = { MiscConfig.debugChat },
-            write = { on -> MiscConfig.debugChat = on },
+            "Dev > Debug Chat Messages",
+            read = { DevConfig.debugChat },
+            write = { on -> DevConfig.debugChat = on },
         ),
     ).associateBy { it.name }
 

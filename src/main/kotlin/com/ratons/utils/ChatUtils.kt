@@ -1,8 +1,7 @@
 package com.ratons.utils
 
 import com.ratons.Ratons
-import com.ratons.config.MiscConfig
-import com.ratons.config.RatConfig
+import com.ratons.config.DevConfig
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -24,9 +23,9 @@ object ChatUtils {
     fun userError(message: String) = send(USER_ERROR_PREFIX + message)
 
     fun debug(message: String) {
-        if (!RatConfig.debug) return
+        if (!DevConfig.debug) return
         Ratons.logger.info(message)
-        if (MiscConfig.debugChat) send(DEBUG_PREFIX + message)
+        if (DevConfig.debugChat) send(DEBUG_PREFIX + message)
     }
 
     fun clickable(message: String, command: String, hover: String = "§eClick here!") {

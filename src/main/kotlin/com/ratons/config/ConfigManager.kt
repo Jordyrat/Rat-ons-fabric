@@ -71,7 +71,7 @@ object ConfigManager {
         }
 
         flag("about", "autoUpdates")?.let { RatConfig.autoUpdates = it }
-        flag("about", "debug")?.let { RatConfig.debug = it }
+        flag("about", "debug")?.let { DevConfig.debug = it }
         flag("instancesConfig", "dungeonsCategory", "relicSpawnTimer")?.let { DungeonsConfig.relicSpawnTimer = it }
         flag("instancesConfig", "dungeonsCategory", "closeSecretChest")?.let { DungeonsConfig.closeSecretChest = it }
         flag("instancesConfig", "autoRefill", "enabled")?.let { AutoRefillConfig.enabled = it }
