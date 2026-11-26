@@ -1,9 +1,9 @@
 package com.ratons.config
 
-import net.minecraft.client.Minecraft
 import com.teamresourceful.resourcefulconfig.client.components.ModSprites
+import com.teamresourceful.resourcefulconfig.client.components.options.types.BooleanOptionWidget
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.gui.TextAlignment
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.input.MouseButtonEvent
@@ -13,9 +13,10 @@ import net.minecraft.network.chat.MutableComponent
 import java.util.Locale
 
 /**
- * A switch in the same dress as the ON/OFF rows: the panel's button sprite as the track and the
- * library's switch sprite sitting under the active mode. Resourceful Config's enum control and its
- * select widget both open a menu, which hides the other two states.
+ * A switch in the same dress as the ON/OFF rows: the panel's button sprite as the track, the
+ * library's switch sprite under the active mode, and its own centred-string helper so the labels
+ * sit and shade exactly like OFF and ON do. Resourceful Config's enum control and its select
+ * widget both open a menu, which hides the other two states.
  */
 class UpdateModeSwitch(
     private val getter: () -> UpdateMode,
@@ -31,6 +32,7 @@ class UpdateModeSwitch(
         partialTick: Float,
     ) {
         val current = getter()
+        val font = Minecraft.getInstance().font
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ModSprites.BUTTON, x, y, width, height)
         graphics.blitSprite(
             RenderPipelines.GUI_TEXTURED,
@@ -41,14 +43,17 @@ class UpdateModeSwitch(
             height - 2,
         )
 
-        val text = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE)
         UpdateMode.entries.forEachIndexed { index, mode ->
             val left = x + index * SEGMENT_WIDTH
-            text.accept(
-                TextAlignment.CENTER,
+            val hovered = mouseX in left until left + SEGMENT_WIDTH && mouseY in y until y + height
+            BooleanOptionWidget.extractCenteredString(
+                graphics,
+                font,
+                Component.literal(labels[index]),
                 left + SEGMENT_WIDTH / 2,
-                y + (height - 8) / 2,
-                Component.literal(labels[index]).withColor(if (mode == current) ACTIVE_TEXT else IDLE_TEXT),
+                y + 4,
+                if (mode == current) ACTIVE_TEXT else IDLE_TEXT,
+                hovered && mode == current,
             )
         }
     }
@@ -65,15 +70,14 @@ class UpdateModeSwitch(
     companion object {
         private const val HEIGHT = 16
 
-        // One width for all three, sized to the longest label so the longest one cannot spill
-        // over its neighbour.
+        /** The colours the ON/OFF switch draws its highlighted and idle labels in. */
+        private const val ACTIVE_TEXT = 0xFF727478.toInt()
+        private const val IDLE_TEXT = 0xFFFAF9F6.toInt()
+
         private val SEGMENT_WIDTH: Int
             get() {
                 val font = Minecraft.getInstance().font
                 return UpdateMode.entries.maxOf { font.width(it.name.uppercase(Locale.ROOT)) } + 16
             }
-
-        private const val ACTIVE_TEXT = 0xFF1A1A1A.toInt()
-        private const val IDLE_TEXT = 0xFFA8A8A8.toInt()
     }
 }
