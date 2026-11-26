@@ -106,7 +106,7 @@ jobs:
         run: |
           downloads=$(gh api "repos/$REPO/releases" --paginate --jq '.[].assets[].download_count' | awk '{ total += $1 } END { print total + 0 }')
           version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
-          sed -i -E "s|badge/Downloads-[0-9]+-green|badge/Downloads-$downloads-green|" README.md
+          sed -i -E "badge/Downloads-[0-9]+-brightgreen|badge/Downloads-$downloads-green|" README.md
           sed -i -E "s|badge/Version-[0-9.]+-blue|badge/Version-$version-blue|" README.md
           if git diff --quiet README.md; then
             echo "Badges already current."
