@@ -27,6 +27,12 @@ jobs:
             -   uses: fregante/title-to-labels-action@v1
                 with:
                     token: ${{ secrets.GITHUB_TOKEN }}
+                    keywords: feat
+                    labels: feature
+
+            -   uses: fregante/title-to-labels-action@v1
+                with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
                     keywords: docs
                     labels: documentation
 
