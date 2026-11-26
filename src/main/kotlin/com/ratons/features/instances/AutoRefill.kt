@@ -22,11 +22,12 @@ object AutoRefill {
     private fun refill() {
         if (!config.enabled) return
         for (refillable in Refillables.entries) {
-            // The floors match the 1.8.9 build: Decoys on F4, where the party splits them
-            // across the boss room, and Inflatable Jerrys on M7.
+            // Decoys are split across the boss room on F4 and its Master Mode twin, and
+            // Inflatable Jerrys only matter on M7.
             val wanted = when (refillable) {
                 Refillables.ENDER_PEARL -> config.pearls
-                Refillables.DECOY -> config.decoys && SkyBlockState.floor == DungeonFloor.F4
+                Refillables.DECOY -> config.decoys &&
+                    (SkyBlockState.floor == DungeonFloor.F4 || SkyBlockState.floor == DungeonFloor.M4)
                 Refillables.INFLATABLE_JERRY -> config.jerrys && SkyBlockState.floor == DungeonFloor.M7
             }
             if (!wanted) continue

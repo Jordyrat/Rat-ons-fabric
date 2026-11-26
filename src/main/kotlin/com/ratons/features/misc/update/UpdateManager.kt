@@ -17,7 +17,7 @@ import java.time.Duration
  */
 object UpdateManager {
 
-    private const val REPO = "Jordyrat/Rat-ons"
+    private const val REPO = "Jordyrat/Rat-ons-fabric"
     private val http: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .followRedirects(HttpClient.Redirect.NORMAL)

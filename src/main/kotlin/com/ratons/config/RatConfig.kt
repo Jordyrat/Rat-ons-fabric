@@ -62,7 +62,7 @@ object AutoRefillConfig : CategoryKt("autoRefill") {
 
     var decoys by boolean(false) {
         translation = "Refill Decoys"
-        description = TranslatableValue.literal("Enables auto refill for Decoys on F4.")
+        description = TranslatableValue.literal("Enables auto refill for Decoys on F4/M4.")
     }
 
     var jerrys by boolean(false) {
