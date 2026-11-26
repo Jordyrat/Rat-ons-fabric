@@ -3,6 +3,7 @@ package com.ratons
 import com.ratons.commands.RatCommands
 import com.ratons.config.ConfigManager
 import com.ratons.config.DevConfig
+import com.ratons.config.UpdateModeRenderer
 import com.ratons.data.ChatEvents
 import com.ratons.features.instances.AutoRefill
 import com.ratons.features.instances.PartyFinderFeatures
@@ -25,6 +26,7 @@ class Ratons : ClientModInitializer {
 
     override fun onInitializeClient() {
         ConfigManager.load()
+        UpdateModeRenderer.register()
 
         RatCommands.register()
         ItemDataDisplay.register()

@@ -26,6 +26,7 @@ object RatConfig : ConfigKt("ratons/config") {
 
     var updateMode by enum(UpdateMode.Automatic) {
         translation = "Update Mode"
+        renderer = UpdateModeRenderer.id
         description = TranslatableValue.literal(
             """
             None: skips the automatic check when the game starts.
