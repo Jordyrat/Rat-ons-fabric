@@ -1,86 +1,93 @@
 package com.ratons.features.misc.update
 
-import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.deps.libautoupdate.GithubReleaseUpdateSource
-import at.hannibal2.skyhanni.deps.libautoupdate.PotentialUpdate
-import at.hannibal2.skyhanni.deps.libautoupdate.UpdateContext
-import at.hannibal2.skyhanni.deps.libautoupdate.UpdateTarget
-import at.hannibal2.skyhanni.deps.libautoupdate.UpdateUtils
-import at.hannibal2.skyhanni.events.LorenzTickEvent
+import com.google.gson.JsonParser
 import com.ratons.Ratons
-import com.ratons.events.RatCommandRegistrationEvent
-import com.ratons.modules.RatModule
+import com.ratons.config.RatConfig
+import com.ratons.config.UpdateMode
 import com.ratons.utils.ChatUtils
-import io.github.moulberry.notenoughupdates.util.ApiUtil
-import io.github.moulberry.notenoughupdates.util.MinecraftExecutor
-import net.minecraftforge.common.MinecraftForge
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import java.util.concurrent.CompletableFuture
-import javax.net.ssl.HttpsURLConnection
+import com.ratons.utils.SemanticVersion
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 
-@RatModule
+/**
+ * Checks GitHub releases at launch. A newer release is downloaded and handed to
+ * [SelfUpdater], which swaps the jar once the game has closed; when the mod is not a plain
+ * jar in a mods folder, the chat message links the download instead.
+ */
 object UpdateManager {
 
-    private val config get() = Ratons.feature.about
+    private const val REPO = "Jordyrat/Rat-ons-fabric"
+    private val http: HttpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(10))
+        .followRedirects(HttpClient.Redirect.NORMAL)
+        .build()
 
-    private var activePromise: CompletableFuture<*>? = null
-        set(value) {
-            field?.cancel(true)
-            field = value
-        }
+    private var checked = false
+    private var announced = false
 
-    private var potentialUpdate: PotentialUpdate? = null
-
-    private val context = UpdateContext(
-        GithubReleaseUpdateSource("Jordyrat", "Rat-ons"),
-        UpdateTarget.deleteAndSaveInTheSameFolder(this::class.java),
-        SemanticVersion.of(Ratons.VERSION),
-        Ratons.MOD_ID,
-    )
-
-    init {
-        context.cleanup()
-        UpdateUtils.patchConnection {
-            if (it is HttpsURLConnection) {
-                ApiUtil.patchHttpsRequest(it)
-            }
-        }
+    fun onTick() {
+        if (checked || RatConfig.updateMode == UpdateMode.None) return
+        if (net.minecraft.client.Minecraft.getInstance().player == null) return
+        checked = true
+        check(manual = false)
     }
 
-    @HandleEvent
-    fun onCommandRegister(event: RatCommandRegistrationEvent) {
-        event.register("ratupdate") {
-            this.description = "Checks for updates"
-            callback { checkUpdate() }
-        }
-    }
+    /** The explicit command, which checks even when the mode is off. */
+    fun checkForUpdates() = check(manual = true)
 
-    @SubscribeEvent
-    fun onTick(event: LorenzTickEvent) {
-        if (!config.autoUpdates) return
-        Ratons.mc.thePlayer ?: return
-        MinecraftForge.EVENT_BUS.unregister(this)
-        checkUpdate()
-    }
-
-    private fun checkUpdate(stream: String = config.updateStream.streamName) {
-        activePromise = context.checkUpdate(stream)
-            .thenAcceptAsync({
-                potentialUpdate = it
-                if (it.isUpdateAvailable) {
-                    ChatUtils.chat("Found a new update! starting to download...")
-                    queueUpdate()
+    private fun check(manual: Boolean) {
+        Thread.ofVirtual().name("ratons-update-check").start {
+            runCatching { fetchLatestRelease() }
+                .onSuccess { release ->
+                    val current = SemanticVersion.of(Ratons.version)
+                    if (SemanticVersion.of(release.tag) <= current) return@onSuccess
+                    if (announced) return@onSuccess
+                    announced = true
+                    deliver(release, manual)
                 }
-            }, MinecraftExecutor.OnThread)
+                .onFailure { Ratons.logger.warn("Update check failed", it) }
+        }
     }
 
-    private fun queueUpdate() {
-        activePromise = CompletableFuture.supplyAsync {
-            potentialUpdate!!.prepareUpdate()
-        }.thenAcceptAsync({
-            potentialUpdate!!.executePreparedUpdate()
-            ChatUtils.chat("Update complete! Restart your game to apply changes.")
-        }, MinecraftExecutor.OnThread)
+    private fun deliver(release: Release, manual: Boolean) {
+        val mode = RatConfig.updateMode
+        if (mode == UpdateMode.None && !manual) return
+        val staged = if (mode == UpdateMode.Automatic) {
+            release.assetUrl?.let { SelfUpdater.stageUpdate(release.tag, it) }
+        } else {
+            null
+        }
+        net.minecraft.client.Minecraft.getInstance().execute {
+            if (staged == null && mode == UpdateMode.Automatic && release.assetUrl != null) {
+                ChatUtils.chat("§aVersion §e${release.tag}§a downloaded and will replace this jar when you close the game.")
+                return@execute
+            }
+            ChatUtils.chat("§aVersion §e${release.tag}§a is available:")
+            if (staged != null) Ratons.logger.info("Not self-updating: ${staged}")
+            ChatUtils.openLink("§b${release.url}", release.url)
+        }
     }
 
+    private class Release(val tag: String, val url: String, val assetUrl: String?)
+
+    private fun fetchLatestRelease(): Release {
+        val request = HttpRequest.newBuilder(URI.create("https://api.github.com/repos/$REPO/releases/latest"))
+            .header("Accept", "application/vnd.github+json")
+            .header("User-Agent", "Rat-ons")
+            .timeout(Duration.ofSeconds(15))
+            .GET()
+            .build()
+        val response = http.send(request, HttpResponse.BodyHandlers.ofString())
+        require(response.statusCode() == 200) { "GitHub returned ${response.statusCode()}" }
+        val json = JsonParser.parseString(response.body()).asJsonObject
+        val asset = json.getAsJsonArray("assets")?.firstOrNull { it.asJsonObject["name"]?.asString?.endsWith(".jar") == true }
+        return Release(
+            tag = json.get("tag_name").asString,
+            url = json.get("html_url").asString,
+            assetUrl = asset?.asJsonObject?.get("browser_download_url")?.asString,
+        )
+    }
 }

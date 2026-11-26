@@ -1,9 +1,0 @@
-{
-    "package": "com.ratons.mixins.transformers",
-    "plugin": "com.ratons.mixins.init.AutoDiscoveryMixinPlugin",
-    "refmap": "mixins.ratons.refmap.json",
-    "compatibilityLevel": "JAVA_8",
-    "injectors": {
-        "maxShiftBy": 2
-    }
-}

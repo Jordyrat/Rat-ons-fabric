@@ -1,26 +1,30 @@
 package com.ratons.features.instances.dungeons
 
-import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.data.IslandType
-import at.hannibal2.skyhanni.events.minecraft.packet.PacketReceivedEvent
-import at.hannibal2.skyhanni.features.dungeon.DungeonAPI
-import com.ratons.Ratons
-import com.ratons.modules.RatModule
-import com.ratons.utils.RatUtils.send
-import net.minecraft.network.play.client.C0DPacketCloseWindow
-import net.minecraft.network.play.server.S2DPacketOpenWindow
+import com.ratons.config.DungeonsConfig
+import com.ratons.data.SkyBlockState
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 
-@RatModule
+/**
+ * The 1.8.9 version cancelled the open-window packet. Closing the screen right after it opens
+ * reaches the same end state, and the server closes the container on the next tick.
+ */
 object DungeonFeatures {
 
-    private val config get() = Ratons.feature.instancesConfig.dungeonsCategory
+    private val config get() = DungeonsConfig
 
-    @HandleEvent(onlyOnIsland = IslandType.CATACOMBS, receiveCancelled = true)
-    fun onPacket(event: PacketReceivedEvent) {
-        val packet = event.packet as? S2DPacketOpenWindow ?: return
-        if (!config.closeSecretChest || !DungeonAPI.inDungeon()) return
-        if (packet.windowTitle.unformattedText != "Chest") return
-        C0DPacketCloseWindow(packet.windowId).send()
-        event.cancel()
+    fun register() {
+        ScreenEvents.AFTER_INIT.register { client, screen, _, _ ->
+            if (screen !is AbstractContainerScreen<*>) return@register
+            if (!config.closeSecretChest || !SkyBlockState.inDungeon) return@register
+            if (screen.title.string != "Chest") return@register
+
+            client.execute {
+                if (Minecraft.getInstance().gui.screen() === screen) {
+                    client.player?.closeContainer()
+                }
+            }
+        }
     }
 }

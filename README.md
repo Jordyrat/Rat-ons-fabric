@@ -16,10 +16,17 @@ A 1.8.9 Minecraft mod made for Hypixel Skyblock. Rat-ons focuses on trying to re
 If you like Rat-ons, please consider Starring!
 
 ## Installation
-1. **Download** the latest release from [Releases](https://github.com/Jordyrat/Rat-ons/releases) into your mods folder.
-2. **Install** the dependencies required for the mod to work, [SkyHanni](https://github.com/hannibal002/SkyHanni/releases) and [NEU](https://github.com/NotEnoughUpdates/NotEnoughUpdates/releases)
-3. **Configure** the mod's options with `/rat`.
-4. **Enjoy** using the mods features to enhance your gameplay!
+1. **Install** [Fabric](https://fabricmc.net/use/) for Minecraft **26.2**, the [Fabric API](https://modrinth.com/mod/fabric-api) and [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin). The last two are prerequisites; Rat-ons does not bundle them.
+2. **Download** the latest release from [Releases](https://github.com/Jordyrat/Rat-ons/releases) into your mods folder.
+3. **Configure** the mod with `/rat`, or toggle a feature with `/rat toggle <feature>`.
+
+Rat-ons used to be an addon for SkyHanni on 1.8.9. This version targets 26.2 and reads the
+SkyBlock state it needs from the tab list itself, so no companion mod is required.
+
+## Building
+`./gradlew build` produces the mod jar in `build/libs`. The build needs JDK 25 and Gradle 9.8+
+(the wrapper supplies Gradle); Minecraft 26.1 and later ship unobfuscated, so there are no
+mappings to configure. `./gradlew runClient` starts the development client.
 
 ## Support
 Suggest features and report issues using the **Issues** tab above. We do not currently have a discord for support but please feel free to use the **Discussions** tab to talk to other members and ask for support.

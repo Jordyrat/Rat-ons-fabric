@@ -1,86 +1,72 @@
 package com.ratons
 
-import at.hannibal2.skyhanni.api.event.SkyHanniEvents
-import at.hannibal2.skyhanni.deps.moulconfig.managed.ManagedConfig
-import at.hannibal2.skyhanni.events.SecondPassedEvent
-import at.hannibal2.skyhanni.test.command.ErrorManager
-import com.ratons.config.features.Features
-import com.ratons.events.RatCommandRegistrationEvent
-import com.ratons.mixins.transformers.skyhanni.AccessorSkyHanniEvents
-import com.ratons.modules.Modules
-import net.minecraft.client.Minecraft
-import net.minecraftforge.common.MinecraftForge
-import net.minecraftforge.fml.common.Mod
-import net.minecraftforge.fml.common.event.FMLInitializationEvent
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
-import java.io.File
+import com.ratons.commands.RatCommands
+import com.ratons.config.ConfigManager
+import com.ratons.config.DevConfig
+import com.ratons.config.UpdateModeRenderer
+import com.ratons.data.ChatEvents
+import com.ratons.features.instances.AutoRefill
+import com.ratons.features.instances.PartyFinderFeatures
+import com.ratons.features.instances.dungeons.DungeonFeatures
+import com.ratons.features.instances.dungeons.RelicSpawnTimer
+import com.ratons.features.misc.ItemDataDisplay
+import com.ratons.features.misc.update.UpdateManager
+import com.ratons.utils.ChatUtils
+import com.ratons.utils.ErrorManager
+import net.fabricmc.api.ClientModInitializer
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.loader.api.FabricLoader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-@Mod(
-    modid = Ratons.MOD_ID,
-    name = Ratons.MOD_NAME,
-    clientSideOnly = true,
-    useMetadata = true,
-    version = Ratons.VERSION,
-    dependencies = "before:skyhanni",
-)
-class Ratons {
+class Ratons : ClientModInitializer {
 
-    @Mod.EventHandler
-    fun init(event: FMLInitializationEvent) {
-        loadModule(this)
-        Modules.modules.loadModules()
+    private var ticks = 0
 
-        RatCommandRegistrationEvent.post()
+    override fun onInitializeClient() {
+        ConfigManager.load()
+        UpdateModeRenderer.register()
+
+        RatCommands.register()
+        ItemDataDisplay.register()
+        PartyFinderFeatures.register()
+        DungeonFeatures.register()
+        RelicSpawnTimer.register()
+
+        ChatEvents.register(::onChat)
+        ChatEvents.subscribe()
+
+        ClientTickEvents.END_CLIENT_TICK.register {
+            ticks++
+            ErrorManager.guard("updating the relic timer") { RelicSpawnTimer.tick() }
+            ErrorManager.guard("checking for updates") { UpdateManager.onTick() }
+        }
+
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            RelicSpawnTimer.reset()
+        }
+
+        logger.info("$MOD_NAME $version loaded")
     }
 
-    @SubscribeEvent
-    fun onSecondPassed(event: SecondPassedEvent) {
-        if (event.repeatSeconds(60)) {
-            managedConfig.saveToFile()
-        }
-    }
-
-    private fun List<Any>.loadModules() = forEach(::loadModule)
-
-    private fun loadModule(obj: Any) {
-        if (obj in modules) return
-        try {
-            for (method in obj.javaClass.declaredMethods) {
-                @Suppress("CAST_NEVER_SUCCEEDS")
-                (SkyHanniEvents as AccessorSkyHanniEvents).`ratons$registerMethod`(method, obj)
-            }
-            MinecraftForge.EVENT_BUS.register(obj)
-            modules.add(obj)
-        } catch (e: Exception) {
-            ErrorManager.logErrorWithData(
-                e,
-                "§cRATONS ERROR!! Something went wrong while initializing events. " +
-                    "Please report this if you are on latest SkyHanni beta, or update if you aren't.",
-            )
-        }
+    private fun onChat(message: String) {
+        if (message.contains("Starting a new dungeon")) AutoRefill.onDungeonStart()
+        if (message.contains("I will go and fish up Kuudra")) AutoRefill.onKuudraStart()
+        if (DevConfig.debug) ChatUtils.debug("chat: $message")
     }
 
     companion object {
-        const val MOD_ID = "@MOD_ID@"
-        const val VERSION = "@MOD_VER@"
-        const val MOD_NAME = "@MOD_NAME@"
-
-        const val HIDE_MOD_ID: Boolean = true
-
-        val mc get(): Minecraft = Minecraft.getMinecraft()
+        const val MOD_ID = "ratons"
+        const val MOD_NAME = "Rat-ons"
 
         @JvmField
-        val logger: Logger = LogManager.getLogger(MOD_NAME)
+        val logger: Logger = LoggerFactory.getLogger(MOD_NAME)
 
-        @JvmField
-        val modules: MutableList<Any> = ArrayList()
-
-        @JvmStatic
-        val feature: Features get() = managedConfig.instance
-
-        val managedConfig by lazy { ManagedConfig.create(File("config/$MOD_ID/config.json"), Features::class.java) }
-
+        val version: String by lazy {
+            FabricLoader.getInstance().getModContainer(MOD_ID)
+                .map { it.metadata.version.friendlyString }
+                .orElse("unknown")
+        }
     }
 }

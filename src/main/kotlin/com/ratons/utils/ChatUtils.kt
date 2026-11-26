@@ -1,76 +1,61 @@
 package com.ratons.utils
 
-import at.hannibal2.skyhanni.utils.ChatUtils
-import at.hannibal2.skyhanni.utils.SimpleTimeMark
-import at.hannibal2.skyhanni.utils.chat.Text
-import at.hannibal2.skyhanni.utils.chat.Text.prefix
 import com.ratons.Ratons
-import net.minecraft.util.ChatComponentText
+import com.ratons.config.DevConfig
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Style
 
 object ChatUtils {
-    private const val DEBUG_PREFIX = "[Rat-ons Debug] §7"
+
+    private const val PREFIX = "§e[Rat-ons] "
     private const val USER_ERROR_PREFIX = "§c[Rat-ons] "
-    private const val CHAT_PREFIX = "[Rat-ons] "
+    private const val DEBUG_PREFIX = "§7[Rat-ons Debug] §7"
+
+    private val player get() = Minecraft.getInstance().player
+
+    fun chat(message: String, prefix: Boolean = true) {
+        send((if (prefix) PREFIX else "") + message)
+    }
+
+    fun userError(message: String) = send(USER_ERROR_PREFIX + message)
 
     fun debug(message: String) {
-        if (Ratons.feature.about.debug && internalChat(DEBUG_PREFIX + message)) {
-            Ratons.logger.info("[Rat-ons] $message")
-        }
+        if (!DevConfig.debug) return
+        Ratons.logger.info(message)
+        if (DevConfig.debugChat) send(DEBUG_PREFIX + message)
     }
 
-    fun userError(message: String) = internalChat(USER_ERROR_PREFIX + message)
-
-    fun chat(message: String, prefix: Boolean = true, prefixColor: String = "§e") {
-        val text = (if (prefix) prefixColor + CHAT_PREFIX else "") + message
-        ChatUtils.chat(text, false)
+    fun clickable(message: String, command: String, hover: String = "§eClick here!") {
+        display(
+            Component.literal(PREFIX + message).withStyle(
+                Style.EMPTY
+                    .withClickEvent(ClickEvent.RunCommand(command))
+                    .withHoverEvent(HoverEvent.ShowText(Component.literal(hover))),
+            ),
+        )
     }
 
-    private fun internalChat(message: String): Boolean {
-        return ChatUtils.chat(ChatComponentText(message))
+    fun openLink(message: String, url: String) {
+        display(
+            Component.literal(PREFIX + message).withStyle(
+                Style.EMPTY
+                    .withClickEvent(ClickEvent.OpenUrl(java.net.URI.create(url)))
+                    .withHoverEvent(HoverEvent.ShowText(Component.literal("§eOpen $url"))),
+            ),
+        )
     }
 
-    fun clickableChat(
-        message: String,
-        onClick: () -> Any,
-        hover: String = "§eClick here!",
-        expireAt: SimpleTimeMark = SimpleTimeMark.farFuture(),
-        prefix: Boolean = true,
-        prefixColor: String = "§e",
-        oneTimeClick: Boolean = false,
-    ) {
-        val text = (if (prefix) prefixColor + CHAT_PREFIX else "") + message
-        ChatUtils.clickableChat(text, onClick, hover, expireAt, false, oneTimeClick = oneTimeClick)
+    /** Runs a server command as if the player typed it. */
+    fun sendCommand(command: String) {
+        player?.connection?.sendCommand(command)
     }
 
-    fun hoverableChat(
-        message: String,
-        hover: List<String>,
-        command: String? = null,
-        prefix: Boolean = true,
-        prefixColor: String = "§e",
-    ) {
-        val text = (if (prefix) prefixColor + CHAT_PREFIX else "") + message
-        ChatUtils.hoverableChat(text, hover, command, false)
-    }
+    private fun send(message: String) = display(Component.literal(message))
 
-    fun clickableLinkChat(
-        message: String,
-        url: String,
-        hover: String = "§eOpen $url",
-        autoOpen: Boolean = false,
-        prefix: Boolean = true,
-        prefixColor: String = "§e",
-    ) {
-        val text = (if (prefix) prefixColor + CHAT_PREFIX else "") + message
-        ChatUtils.clickableLinkChat(text, url, hover, autoOpen, false)
-    }
-
-    fun multiComponentMessage(
-        components: List<ChatComponentText>,
-        prefix: Boolean = true,
-        prefixColor: String = "§e",
-    ) {
-        val msgPrefix = if (prefix) prefixColor + CHAT_PREFIX else ""
-        ChatUtils.chat(Text.join(components).prefix(msgPrefix))
+    private fun display(component: Component) {
+        Minecraft.getInstance().gui.hud.chat.addClientSystemMessage(component)
     }
 }

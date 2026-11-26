@@ -1,35 +1,58 @@
 package com.ratons.utils
 
-import at.hannibal2.skyhanni.utils.ItemUtils.getItemRarityOrNull
-import at.hannibal2.skyhanni.utils.ItemUtils.getLore
-import at.hannibal2.skyhanni.utils.SimpleTimeMark
-import at.hannibal2.skyhanni.utils.SkyBlockItemModifierUtils.getExtraAttributes
-import com.ratons.utils.RatUtils.cleanName
-import net.minecraft.item.ItemStack
+import net.minecraft.core.component.DataComponents
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.item.ItemStack
 
+/**
+ * Hypixel keeps its item data in an ExtraAttributes compound. On modern versions the server
+ * sends it inside the custom_data component, which is where these read from.
+ */
 object ItemUtils {
 
-    fun ItemStack.getDungeonTier() = getAttributeInt("item_tier")
+    private val RARITY_NAMES = listOf(
+        "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL",
+    )
 
-    fun ItemStack.getDungeonStatBoost() = getAttributeInt("baseStatBoostPercentage")
+    private val COLOR_CODES = Regex("§.")
 
-    fun ItemStack.getItemTimestamp(): SimpleTimeMark? {
-        val timestamp = getAttributeLong("timestamp") ?: return null
-        return SimpleTimeMark(timestamp)
+    private fun ItemStack.extraAttributes(): CompoundTag {
+        val tag = get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return CompoundTag()
+        return if (tag.contains("ExtraAttributes")) tag.getCompound("ExtraAttributes").orElse(CompoundTag()) else tag
     }
 
-    private fun ItemStack.getAttributeInt(label: String) = getExtraAttributes()?.getInteger(label)?.takeUnless { it == 0 }
-
-    private fun ItemStack.getAttributeLong(label: String) = getExtraAttributes()?.getLong(label)?.takeUnless { it == 0L }
-
-    private fun ItemStack.getAttributeBoolean(label: String) = getExtraAttributes()?.getBoolean(label) ?: false
-
-    private fun ItemStack.getAttributeByte(label: String) = getExtraAttributes()?.getByte(label) ?: 0
-
-    fun ItemStack.isDungeonItem(): Boolean = getLore().indexOfLast { it.contains("DUNGEON ") } != -1
-
-    fun ItemStack.getRarityLoreIndex(lore: List<String>): Int {
-        val rarity = getItemRarityOrNull()?.cleanName() ?: return -1
-        return lore.indexOfLast { it.contains(rarity) }
+    fun ItemStack.getIntAttribute(key: String): Int? {
+        val tag = extraAttributes()
+        if (!tag.contains(key)) return null
+        return tag.getInt(key).orElse(0).takeUnless { it == 0 }
     }
+
+    fun ItemStack.getLongAttribute(key: String): Long? {
+        val tag = extraAttributes()
+        if (!tag.contains(key)) return null
+        return tag.getLong(key).orElse(0L).takeUnless { it == 0L }
+    }
+
+    fun ItemStack.loreLines(): List<String> = get(DataComponents.LORE)?.lines()?.map { it.string } ?: emptyList()
+
+    fun ItemStack.dungeonTier(): Int? = getIntAttribute("item_tier")
+
+    fun ItemStack.dungeonStatBoost(): Int? = getIntAttribute("baseStatBoostPercentage")
+
+    fun ItemStack.itemTimestamp(): Long? = getLongAttribute("timestamp")
+
+    fun ItemStack.isDungeonItem(): Boolean = loreLines().any { it.contains("DUNGEON ") }
+
+    /**
+     * Index of the rarity footer. Hypixel ends a tooltip with a line like
+     * `LEGENDARY DUNGEON SWORD`, so the line has to start with the rarity and stay upper case;
+     * matching any substring would hit ability text such as "a rare chance".
+     */
+    fun ItemStack.rarityLoreIndex(lore: List<String>): Int =
+        lore.indexOfLast { line ->
+            val plain = plain(line).uppercase()
+            RARITY_NAMES.any { rarity -> plain == rarity || plain.startsWith("$rarity ") }
+        }
+
+    private fun plain(line: String) = line.replace(COLOR_CODES, "").trim()
 }

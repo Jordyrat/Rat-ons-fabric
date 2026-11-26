@@ -1,54 +1,59 @@
 package com.ratons.features.misc
 
-import at.hannibal2.skyhanni.events.LorenzToolTipEvent
-import at.hannibal2.skyhanni.utils.LorenzUtils
-import com.ratons.Ratons
-import com.ratons.modules.RatModule
-import com.ratons.utils.ItemUtils.getDungeonStatBoost
-import com.ratons.utils.ItemUtils.getDungeonTier
-import com.ratons.utils.ItemUtils.getItemTimestamp
-import com.ratons.utils.ItemUtils.getRarityLoreIndex
+import com.ratons.config.MiscConfig
+import com.ratons.data.SkyBlockState
+import com.ratons.utils.ItemUtils.dungeonStatBoost
+import com.ratons.utils.ItemUtils.dungeonTier
 import com.ratons.utils.ItemUtils.isDungeonItem
-import com.ratons.utils.TimeUtils.shortFormat
-import net.minecraft.item.ItemStack
-import net.minecraftforge.fml.common.eventhandler.EventPriority
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+import com.ratons.utils.ItemUtils.itemTimestamp
+import com.ratons.utils.ItemUtils.rarityLoreIndex
+import com.ratons.utils.ErrorManager
+import com.ratons.utils.SimpleTimeMark
+import com.ratons.utils.TimeFormat.shortFormat
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
+import net.minecraft.network.chat.Component
+import net.minecraft.world.item.ItemStack
 
-@RatModule
+/**
+ * Adds dungeon quality and item age lines under the rarity line in an item's tooltip.
+ * SkyHanni used to give us the tooltip event; Fabric API's callback replaces it directly.
+ */
 object ItemDataDisplay {
 
-    private val config get() = Ratons.feature.misc
+    private val config get() = MiscConfig
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
-    fun onTooltip(event: LorenzToolTipEvent) {
-        if (!isEnabled()) return
-        val item = event.itemStack
+    fun register() {
+        ItemTooltipCallback.EVENT.register { stack, _, _, lines ->
+            if (!config.dungeonItemData && !config.itemAgeData) return@register
+            if (!SkyBlockState.onSkyBlock) return@register
 
-        var index = item.getRarityLoreIndex(event.toolTip) + 1
-        if (index == 0) return
-        if (event.toolTip.addDungeonQuality(index, item)) index++
-        if (event.toolTip.addItemAge(index, item)) index++
+            ErrorManager.guard("adding item data to a tooltip") {
+                val rarityIndex = stack.rarityLoreIndex(lines.map { it.string })
+                if (rarityIndex >= 0) {
+                    var index = rarityIndex + 1
+                    if (addDungeonQuality(index, stack, lines)) index++
+                    addItemAge(index, stack, lines)
+                }
+            }
+        }
     }
 
-    private fun MutableList<String>.addDungeonQuality(index: Int, item: ItemStack): Boolean {
+    private fun addDungeonQuality(index: Int, item: ItemStack, lore: MutableList<Component>): Boolean {
         if (!config.dungeonItemData) return false
         if (!item.isDungeonItem()) return false
-        val itemTier = item.getDungeonTier() ?: return false
-        val itemQuality = item.getDungeonStatBoost() ?: return false
-        val qualityColor = if (itemQuality == 50) "§d" else "§6"
-        val tierColor = if (itemTier == 10) "§d" else "§6"
-        add(index, "§7Item Quality: +$qualityColor$itemQuality% §7(Tier $tierColor$itemTier§7)")
+        val tier = item.dungeonTier() ?: return false
+        val quality = item.dungeonStatBoost() ?: return false
+        val qualityColor = if (quality == 50) "§d" else "§6"
+        val tierColor = if (tier == 10) "§d" else "§6"
+        lore.add(index, Component.literal("§7Item Quality: +$qualityColor$quality% §7(Tier $tierColor$tier§7)"))
         return true
     }
 
-    private fun MutableList<String>.addItemAge(index: Int, item: ItemStack): Boolean {
+    private fun addItemAge(index: Int, item: ItemStack, lore: MutableList<Component>): Boolean {
         if (!config.itemAgeData) return false
-        val timestamp = item.getItemTimestamp() ?: return false
-        add(index, "§7Item Age: §8${timestamp.passedSince().shortFormat()}")
+        val timestamp = item.itemTimestamp() ?: return false
+        val age = SimpleTimeMark.epochMillis(timestamp).passedSince()
+        lore.add(index, Component.literal("§7Item Age: §8${age.shortFormat()}"))
         return true
     }
-
-    private fun isEnabled() = LorenzUtils.inSkyBlock && (config.dungeonItemData || config.itemAgeData)
-
-
 }

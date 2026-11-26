@@ -1,46 +1,185 @@
 package com.ratons.commands
 
-import at.hannibal2.skyhanni.SkyHanniMod
-import at.hannibal2.skyhanni.api.event.HandleEvent
-import at.hannibal2.skyhanni.config.commands.CommandBuilder
-import at.hannibal2.skyhanni.data.GuiEditManager
-import at.hannibal2.skyhanni.deps.moulconfig.gui.GuiScreenElementWrapper
 import com.ratons.Ratons
-import com.ratons.events.RatCommandRegistrationEvent
-import com.ratons.modules.RatModule
+import com.ratons.config.AutoRefillConfig
+import com.ratons.config.ConfigManager
+import com.ratons.config.DevConfig
+import com.ratons.config.RatConfig
+import com.ratons.config.UpdateMode
+import com.ratons.config.DungeonsConfig
+import com.ratons.config.MiscConfig
+import com.ratons.config.PartyFinderConfig
+import com.ratons.features.misc.update.UpdateManager
+import com.ratons.utils.ChatUtils
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal
 
-@RatModule
+/**
+ * SkyHanni registered client commands through its own builder. Fabric's client command
+ * registration is the direct replacement.
+ */
 object RatCommands {
 
-    @HandleEvent
-    fun onCommandRegistration(event: RatCommandRegistrationEvent) {
-        event.register("rat") {
-            this.aliases = listOf("ratons", "ra")
-            this.description = "Opens the config GUI"
-            callback(::openMainMenu)
+    private val toggles: Map<String, Toggle> = listOf(
+        Toggle(
+            "relictimer",
+            "Dungeons > Relic Spawn Timer",
+            read = { DungeonsConfig.relicSpawnTimer },
+            write = { on -> DungeonsConfig.relicSpawnTimer = on },
+        ),
+        Toggle(
+            "closechest",
+            "Dungeons > Close Secret Chest",
+            read = { DungeonsConfig.closeSecretChest },
+            write = { on -> DungeonsConfig.closeSecretChest = on },
+        ),
+        Toggle(
+            "autorefill",
+            "Instances > Auto Refill",
+            read = { AutoRefillConfig.enabled },
+            write = { on -> AutoRefillConfig.enabled = on },
+        ),
+        Toggle(
+            "refillpearls",
+            "Instances > Auto Refill > Ender Pearls",
+            read = { AutoRefillConfig.pearls },
+            write = { on -> AutoRefillConfig.pearls = on },
+        ),
+        Toggle(
+            "refilldecoys",
+            "Instances > Auto Refill > Decoys",
+            read = { AutoRefillConfig.decoys },
+            write = { on -> AutoRefillConfig.decoys = on },
+        ),
+        Toggle(
+            "refilljerrys",
+            "Instances > Auto Refill > Inflatable Jerrys",
+            read = { AutoRefillConfig.jerrys },
+            write = { on -> AutoRefillConfig.jerrys = on },
+        ),
+        Toggle(
+            "partyfinder",
+            "Instances > Party Size Display",
+            read = { PartyFinderConfig.partySizeDisplay },
+            write = { on -> PartyFinderConfig.partySizeDisplay = on },
+        ),
+        Toggle(
+            "dungeonitemdata",
+            "Misc > Dungeon Item Data",
+            read = { MiscConfig.dungeonItemData },
+            write = { on -> MiscConfig.dungeonItemData = on },
+        ),
+        Toggle(
+            "itemagedata",
+            "Misc > Item Age Data",
+            read = { MiscConfig.itemAgeData },
+            write = { on -> MiscConfig.itemAgeData = on },
+        ),
+        Toggle("debug", "Dev > Debug", read = { DevConfig.debug }, write = { on -> DevConfig.debug = on }),
+        Toggle(
+            "debugchat",
+            "Dev > Debug Chat Messages",
+            read = { DevConfig.debugChat },
+            write = { on -> DevConfig.debugChat = on },
+        ),
+    ).associateBy { it.name }
+
+    private class Toggle(
+        val name: String,
+        val label: String,
+        val read: () -> Boolean,
+        val write: (Boolean) -> Unit,
+    )
+
+    fun register() {
+        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+            dispatcher.register(
+                literal("rat").executes {
+                    ConfigManager.openScreen(null)
+                    1
+                }.then(
+                    literal("status").executes {
+                        status()
+                        1
+                    },
+                ).then(
+                    literal("toggle").then(
+                        argument("feature", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
+                            toggles.keys.filter { it.startsWith(builder.remaining.lowercase()) }.forEach(builder::suggest)
+                            builder.buildFuture()
+                        }.executes { context ->
+                            toggle(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "feature"))
+                            1
+                        },
+                    ),
+                ).then(
+                    literal("update").executes {
+                        UpdateManager.checkForUpdates()
+                        ChatUtils.chat("Checking for updates...")
+                        1
+                    },
+                ).then(
+                    literal("update-mode").then(
+                        argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
+                            UpdateMode.entries.forEach { builder.suggest(it.name.lowercase()) }
+                            builder.buildFuture()
+                        }.executes { context ->
+                            setUpdateMode(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode"))
+                            1
+                        },
+                    ),
+                ),
+            )
+
+            dispatcher.register(
+                literal("rathelp").executes {
+                    ChatUtils.chat("§eCommands:")
+                    ChatUtils.clickable("§7 - /rat §8- feature list", "/rat")
+                    ChatUtils.clickable("§7 - /rat toggle <feature> §8- flip a feature", "/rat toggle ")
+                    ChatUtils.clickable("§7 - /rat status §8- what Rat-ons sees", "/rat status")
+                    ChatUtils.clickable("§7 - /rat update §8- check for a new release", "/rat update")
+                    1
+                },
+            )
         }
-        event.register("rathelp") {
-            this.aliases = listOf("ratcommands")
-            this.description = "Shows all commands"
-            callback(RatonsHelpCommand::onCommand)
+    }
+
+    private fun listFeatures() {
+        ChatUtils.chat("§e${Ratons.MOD_NAME} ${Ratons.version} §7features:")
+        toggles.values.forEach { toggle ->
+            val state = if (toggle.read()) "§aenabled" else "§7disabled"
+            ChatUtils.clickable("§7 - §f${toggle.name} §8(${toggle.label}) §8- $state", "/rat toggle ${toggle.name}")
         }
     }
 
-    private fun openMainMenu(args: Array<String>) {
-        if (args.isNotEmpty()) {
-            if (args[0].lowercase() == "gui") {
-                GuiEditManager.openGuiPositionEditor(hotkeyReminder = true)
-            } else openConfigGui(args.joinToString(" "))
-        } else openConfigGui()
+    private fun status() {
+        ChatUtils.chat("§eRat-ons status:")
+        ChatUtils.chat("§7 On SkyBlock: §f${com.ratons.data.SkyBlockState.onSkyBlock}")
+        ChatUtils.chat("§7 Area: §f${com.ratons.data.SkyBlockState.area ?: "unknown"}")
+        ChatUtils.chat("§7 Dungeon floor: §f${com.ratons.data.SkyBlockState.floor ?: "none"}")
+        ChatUtils.chat("§7 Class: §f${com.ratons.data.SkyBlockState.playerClass?.name ?: "unknown"}")
     }
 
-    val commandsList = mutableListOf<CommandBuilder>()
-
-    private fun openConfigGui(search: String? = null) {
-        val editor = Ratons.managedConfig.getEditor()
-
-        search?.let { editor.search(search) }
-        SkyHanniMod.screenToOpen = GuiScreenElementWrapper(editor)
+    private fun setUpdateMode(value: String) {
+        val mode = UpdateMode.entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: run {
+            ChatUtils.userError("Unknown mode '$value'. Use none, notify or automatic.")
+            return
+        }
+        RatConfig.updateMode = mode
+        ConfigManager.save()
+        ChatUtils.chat("§aUpdate mode is now §e${mode.name}§a.")
     }
 
+    private fun toggle(feature: String) {
+        val key = feature.lowercase()
+        val toggle = toggles[key] ?: run {
+            ChatUtils.userError("Unknown feature '$feature'. Try /rat for the list.")
+            return
+        }
+        val now = !toggle.read()
+        toggle.write(now)
+        ConfigManager.save()
+        ChatUtils.chat("§a${toggle.label} is now ${if (now) "enabled" else "disabled"}.")
+    }
 }
