@@ -3,7 +3,6 @@ package com.ratons.config
 import com.ratons.Ratons
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigElementRenderer
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigUI
-import com.teamresourceful.resourcefulconfig.api.client.options.ResourcefulConfigOptionUI
 import com.teamresourceful.resourcefulconfig.api.types.elements.ResourcefulConfigEntryElement
 import com.teamresourceful.resourcefulconfig.api.types.entries.ResourcefulConfigValueEntry
 import net.minecraft.client.gui.components.AbstractWidget
@@ -27,6 +26,7 @@ object UpdateModeRenderer {
     }
 
     private class Renderer(
+
         private val value: ResourcefulConfigValueEntry?,
         private val entry: ResourcefulConfigEntryElement?,
     ) : ResourcefulConfigElementRenderer {
@@ -40,11 +40,9 @@ object UpdateModeRenderer {
         override fun widgets(): List<AbstractWidget> {
             val value = value ?: return emptyList()
             return listOf(
-                ResourcefulConfigOptionUI.select(
-                    title(),
-                    UpdateMode.entries,
-                    { listOfNotNull(value.getEnum() as? UpdateMode) },
-                    { selected -> (selected.firstOrNull() as? UpdateMode)?.let { value.setEnum(it) } },
+                UpdateModeSwitch(
+                    getter = { value.getEnum() as? UpdateMode ?: UpdateMode.Automatic },
+                    setter = { value.setEnum(it) },
                 ),
             )
         }
