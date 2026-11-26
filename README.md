@@ -21,6 +21,12 @@ If you like Rat-ons, please consider Starring!
 Rat-ons used to be an addon for SkyHanni on 1.8.9. This version targets 26.2 and bundles
 [SkyblockAPI](https://github.com/SkyblockAPI/SkyblockAPI), so no companion mod is required.
 
+## AI Usage
+
+Parts of Rat-ons, including this Fabric port and much of its documentation, were written with the help of AI coding tools under human direction and review. The same standard applies to that code as to anything hand-written: it is reviewed, built and run before release, but it is still code you should read before you trust it.
+
+Nothing in the running mod uses an AI model. It makes no AI calls and sends nothing about your gameplay anywhere; the only network request is the update check against GitHub, which you can switch off in `/rat` under Update Mode.
+
 ## Building
 `./gradlew build` produces the mod jar in `build/libs`. The build needs JDK 25 and Gradle 9.8+
 (the wrapper supplies Gradle); Minecraft 26.1 and later ship unobfuscated, so there are no
