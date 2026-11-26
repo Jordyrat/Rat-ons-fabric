@@ -14,9 +14,6 @@
       "com.ratons.Ratons"
     ]
   },
-  "mixins": [
-    "mixins.ratons.json"
-  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",

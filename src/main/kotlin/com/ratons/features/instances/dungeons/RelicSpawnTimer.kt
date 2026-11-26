@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
+import tech.thatgravyboat.skyblockapi.api.area.dungeon.DungeonFloor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -29,7 +30,7 @@ object RelicSpawnTimer {
 
     private var messagesSent = 0
     private var remaining: Duration = Duration.ZERO
-    private var lastFloor: String? = null
+    private var lastFloor: DungeonFloor? = null
 
     fun register() {
         ChatEvents.register { message ->
@@ -68,5 +69,5 @@ object RelicSpawnTimer {
         remaining = Duration.ZERO
     }
 
-    private fun enabled() = config.relicSpawnTimer && SkyBlockState.inDungeon && SkyBlockState.floor == "M7"
+    private fun enabled() = config.relicSpawnTimer && SkyBlockState.floor == DungeonFloor.M7
 }

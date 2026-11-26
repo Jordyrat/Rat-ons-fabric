@@ -4,7 +4,6 @@ import com.ratons.commands.RatCommands
 import com.ratons.config.ConfigManager
 import com.ratons.config.RatConfig
 import com.ratons.data.ChatEvents
-import com.ratons.data.SkyBlockState
 import com.ratons.features.instances.AutoRefill
 import com.ratons.features.instances.PartyFinderFeatures
 import com.ratons.features.instances.dungeons.DungeonFeatures
@@ -34,18 +33,15 @@ class Ratons : ClientModInitializer {
         RelicSpawnTimer.register()
 
         ChatEvents.register(::onChat)
+        ChatEvents.subscribe()
 
         ClientTickEvents.END_CLIENT_TICK.register {
             ticks++
             ErrorManager.guard("updating the relic timer") { RelicSpawnTimer.tick() }
             ErrorManager.guard("checking for updates") { UpdateManager.onTick() }
-            if (ticks % TICKS_PER_STATE_UPDATE == 0) {
-                ErrorManager.guard("reading the SkyBlock state") { SkyBlockState.update() }
-            }
         }
 
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
-            SkyBlockState.reset()
             RelicSpawnTimer.reset()
         }
 
@@ -59,8 +55,6 @@ class Ratons : ClientModInitializer {
     }
 
     companion object {
-        private const val TICKS_PER_STATE_UPDATE = 20
-
         const val MOD_ID = "ratons"
         const val MOD_NAME = "Rat-ons"
 

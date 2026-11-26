@@ -15,6 +15,7 @@ val devauth_version: String by project
 val resourcefulconfig_version: String by project
 val resourcefullib_version: String by project
 val resourcefulconfigkt_version: String by project
+val skyblockapi_version: String by project
 
 group = "com.$mod_id"
 version = mod_version
@@ -45,6 +46,15 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:$loader_version")
     implementation("net.fabricmc.fabric-api:fabric-api:$fabric_api_version")
     implementation("net.fabricmc:fabric-language-kotlin:$language_kotlin_version")
+
+    // Hypixel data layer: location, dungeon, sacks and item attributes, maintained against
+    // the live game rather than parsed here.
+    implementation("tech.thatgravyboat:skyblock-api:$skyblockapi_version") {
+        capabilities { requireCapability("tech.thatgravyboat:skyblock-api-$minecraft_version") }
+    }
+    include("tech.thatgravyboat:skyblock-api:$skyblockapi_version") {
+        capabilities { requireCapability("tech.thatgravyboat:skyblock-api-$minecraft_version") }
+    }
 
     // The Kotlin DSL over Resourceful Config, so the config can stay in Kotlin.
     implementation("com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:$resourcefulconfigkt_version")

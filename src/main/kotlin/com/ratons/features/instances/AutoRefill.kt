@@ -4,10 +4,12 @@ import com.ratons.config.AutoRefillConfig
 import com.ratons.data.SkyBlockState
 import com.ratons.utils.ChatUtils
 import net.minecraft.client.Minecraft
+import tech.thatgravyboat.skyblockapi.api.area.dungeon.DungeonFloor
 
 /**
- * SkyHanni offered sack refills through an API; the server command it wrapped is public,
- * so this counts the inventory and sends it directly.
+ * Counts what the instance needs against the inventory, then sends the server's refill command
+ * for the shortfall. SkyblockAPI reports sack changes as deltas rather than totals, so the
+ * sack balance is not checked before asking; the server ignores a request it cannot fill.
  */
 object AutoRefill {
 
@@ -22,8 +24,8 @@ object AutoRefill {
         for (refillable in Refillables.entries) {
             val wanted = when (refillable) {
                 Refillables.ENDER_PEARL -> config.pearls
-                Refillables.DECOY -> config.decoys && SkyBlockState.floor?.endsWith("4") == true
-                Refillables.INFLATABLE_JERRY -> config.jerrys && SkyBlockState.floor?.startsWith("M") == true
+                Refillables.DECOY -> config.decoys && SkyBlockState.floor == DungeonFloor.F4
+                Refillables.INFLATABLE_JERRY -> config.jerrys && SkyBlockState.floor == DungeonFloor.M7
             }
             if (!wanted) continue
 
