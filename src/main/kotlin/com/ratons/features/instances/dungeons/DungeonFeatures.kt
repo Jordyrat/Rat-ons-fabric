@@ -1,6 +1,6 @@
 package com.ratons.features.instances.dungeons
 
-import com.ratons.config.ConfigManager
+import com.ratons.config.DungeonsConfig
 import com.ratons.data.SkyBlockState
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -12,7 +12,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
  */
 object DungeonFeatures {
 
-    private val config get() = ConfigManager.config.dungeons
+    private val config get() = DungeonsConfig
 
     fun register() {
         ScreenEvents.AFTER_INIT.register { client, screen, _, _ ->

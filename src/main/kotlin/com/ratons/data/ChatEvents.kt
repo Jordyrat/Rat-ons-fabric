@@ -1,5 +1,7 @@
 package com.ratons.data
 
+import com.ratons.utils.ErrorManager
+
 /** Chat is the main input for dungeon and Kuudra state on SkyBlock; parsed text is enough. */
 object ChatEvents {
 
@@ -13,7 +15,7 @@ object ChatEvents {
         val message = raw.trim()
         if (message.isEmpty()) return
         for (listener in listeners) {
-            runCatching { listener(message) }
+            ErrorManager.guard("processing a chat message") { listener(message) }
         }
     }
 }

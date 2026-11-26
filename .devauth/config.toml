@@ -1,0 +1,10 @@
+# DevAuth configuration for the development client.
+#
+# The Microsoft account is signed in through a browser on the first launch: DevAuth prints a
+# link to the console, and the resulting token is cached in this folder as
+# microsoft_accounts.json. That file is ignored by git and never leaves the machine.
+defaultEnabled = true
+defaultAccount = "main"
+
+[accounts.main]
+type = "microsoft"

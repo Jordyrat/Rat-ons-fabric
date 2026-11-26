@@ -1,6 +1,6 @@
 package com.ratons.features.instances.dungeons
 
-import com.ratons.config.ConfigManager
+import com.ratons.config.DungeonsConfig
 import com.ratons.data.ChatEvents
 import com.ratons.data.SkyBlockState
 import com.ratons.utils.ChatUtils
@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 object RelicSpawnTimer {
 
-    private val config get() = ConfigManager.config.dungeons
+    private val config get() = DungeonsConfig
 
     private const val NPC_PREFIX = "[BOSS] Necron"
     private const val START_MESSAGE = "ARGH!"

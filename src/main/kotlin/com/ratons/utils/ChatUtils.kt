@@ -1,7 +1,7 @@
 package com.ratons.utils
 
 import com.ratons.Ratons
-import com.ratons.config.ConfigManager
+import com.ratons.config.RatConfig
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -23,7 +23,7 @@ object ChatUtils {
     fun userError(message: String) = send(USER_ERROR_PREFIX + message)
 
     fun debug(message: String) {
-        if (!ConfigManager.config.debug) return
+        if (!RatConfig.debug) return
         send(DEBUG_PREFIX + message)
         Ratons.logger.info(message)
     }

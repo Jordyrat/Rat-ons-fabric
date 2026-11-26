@@ -11,6 +11,10 @@ val minecraft_version: String by project
 val loader_version: String by project
 val fabric_api_version: String by project
 val language_kotlin_version: String by project
+val devauth_version: String by project
+val resourcefulconfig_version: String by project
+val resourcefullib_version: String by project
+val resourcefulconfigkt_version: String by project
 
 group = "com.$mod_id"
 version = mod_version
@@ -27,6 +31,13 @@ java {
 
 repositories {
     mavenCentral()
+    maven("https://maven.teamresourceful.com/repository/maven-public/") {
+        name = "TeamResourceful"
+    }
+    // DevAuth is a development-only login helper; it never ships in the mod jar.
+    maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1") {
+        name = "DevAuth"
+    }
 }
 
 dependencies {
@@ -34,6 +45,30 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:$loader_version")
     implementation("net.fabricmc.fabric-api:fabric-api:$fabric_api_version")
     implementation("net.fabricmc:fabric-language-kotlin:$language_kotlin_version")
+
+    // The Kotlin DSL over Resourceful Config, so the config can stay in Kotlin.
+    implementation("com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:$resourcefulconfigkt_version")
+    include("com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:$resourcefulconfigkt_version")
+
+    // Config screens and their widget library. Bundled, because players should not have to
+    // install a config library to run the mod.
+    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-$minecraft_version:$resourcefulconfig_version")
+    include("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-$minecraft_version:$resourcefulconfig_version")
+    implementation("com.teamresourceful.resourcefullib:resourcefullib-fabric-$minecraft_version:$resourcefullib_version")
+    include("com.teamresourceful.resourcefullib:resourcefullib-fabric-$minecraft_version:$resourcefullib_version")
+
+    // Signs the development client into a real Minecraft account, so dev runs see the same
+    // account data a release does. Enabled for runClient below; the tokens stay in .devauth.
+    runtimeOnly("me.djtheredstoner:DevAuth-fabric:$devauth_version")
+}
+
+loom {
+    runs {
+        named("client") {
+            property("devauth.enabled", "true")
+            property("devauth.configDir", file(".devauth").absolutePath)
+        }
+    }
 }
 
 tasks.processResources {

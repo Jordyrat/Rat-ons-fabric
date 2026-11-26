@@ -1,6 +1,6 @@
 package com.ratons.features.instances
 
-import com.ratons.config.ConfigManager
+import com.ratons.config.AutoRefillConfig
 import com.ratons.data.SkyBlockState
 import com.ratons.utils.ChatUtils
 import net.minecraft.client.Minecraft
@@ -12,7 +12,7 @@ import net.minecraft.client.Minecraft
 object AutoRefill {
 
     private val mc get() = Minecraft.getInstance()
-    private val config get() = ConfigManager.config.autoRefill
+    private val config get() = AutoRefillConfig
 
     fun onDungeonStart() = refill()
     fun onKuudraStart() = refill()

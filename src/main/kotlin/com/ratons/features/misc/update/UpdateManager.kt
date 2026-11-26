@@ -2,7 +2,7 @@ package com.ratons.features.misc.update
 
 import com.google.gson.JsonParser
 import com.ratons.Ratons
-import com.ratons.config.ConfigManager
+import com.ratons.config.RatConfig
 import com.ratons.utils.ChatUtils
 import com.ratons.utils.SemanticVersion
 import java.net.URI
@@ -27,7 +27,7 @@ object UpdateManager {
     private var announced = false
 
     fun onTick() {
-        if (checked || !ConfigManager.config.autoUpdates) return
+        if (checked || !RatConfig.autoUpdates) return
         if (net.minecraft.client.Minecraft.getInstance().player == null) return
         checked = true
         checkForUpdates()

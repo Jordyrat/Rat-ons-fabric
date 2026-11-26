@@ -1,6 +1,6 @@
 package com.ratons.features.instances
 
-import com.ratons.config.ConfigManager
+import com.ratons.config.PartyFinderConfig
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack
  */
 object PartyFinderFeatures {
 
-    private val config get() = ConfigManager.config.partyFinder
+    private val config get() = PartyFinderConfig
 
     private val partyNamePattern = Regex("'s Party$")
     private val dungeonPartyPattern = Regex("^Dungeon: ")
@@ -28,7 +28,7 @@ object PartyFinderFeatures {
             if (screen !is AbstractContainerScreen<*>) return@register
             if (!config.partySizeDisplay || screen.title.string != "Party Finder") return@register
 
-            // The screen initialises before the server sends its slots, so the scan runs on
+            // The screen initializes before the server sends its slots, so the scan runs on
             // every frame instead of once here; listings also change while it stays open.
             ScreenEvents.afterForeground(screen).register { rendered, graphics, _, _, _ ->
                 val container = rendered as? AbstractContainerScreen<*> ?: return@register
@@ -58,7 +58,7 @@ object PartyFinderFeatures {
         if (!partyNamePattern.containsMatchIn(stack.hoverName.string)) return null
         val lore = stack.get(DataComponents.LORE)?.lines()?.map { it.string } ?: return null
         val isDungeon = lore.firstOrNull()?.let { dungeonPartyPattern.containsMatchIn(it) } ?: false
-        // Modern lore carries its colour in Style rather than in the text, so compare plain.
+        // Modern lore carries its color in Style rather than in the text, so compare plain.
         val openSlots = lore.count { plain(it).equals(EMPTY_SLOT, ignoreCase = true) }
         return (if (isDungeon) 5 else 4) - openSlots
     }

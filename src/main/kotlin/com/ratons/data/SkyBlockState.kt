@@ -2,6 +2,7 @@ package com.ratons.data
 
 import net.minecraft.client.Minecraft
 import net.minecraft.world.scores.DisplaySlot
+import net.minecraft.world.scores.PlayerTeam
 
 /**
  * Stands in for SkyHanni's island/dungeon tracking. Hypixel publishes the area and class in
@@ -11,9 +12,16 @@ object SkyBlockState {
 
     private val mc get() = Minecraft.getInstance()
 
+    // REGEX-TEST: " §7Area: §bThe Catacombs"
     private val areaPattern = Regex("Area: (.+)")
-    private val floorPattern = Regex("The Catacombs \\((F\\d|M\\d)\\)")
+
+    // REGEX-TEST: " §7The Catacombs §8(M7)"
+    // REGEX-TEST: " The Catacombs (F7)"
+    private val floorPattern = Regex("The Catacombs ?\\((F\\d|M\\d)\\)")
+
+    // REGEX-TEST: "§b(Berserk)"
     private val classPattern = Regex("\\((Berserk|Mage|Archer|Tank|Healer)\\)")
+
     private val colorCodes = Regex("§.")
 
     var area: String? = null
@@ -52,13 +60,24 @@ object SkyBlockState {
     private fun tabListLines(): List<String> =
         mc.connection?.listedOnlinePlayers?.mapNotNull { it.tabListDisplayName?.string } ?: emptyList()
 
+    /**
+     * Sidebar text is not in the score holder's name: vanilla renders it by passing the name
+     * through its team, which is where Hypixel puts the prefix and suffix that carry the real
+     * text. Formatting through the team is what makes the floor visible.
+     */
     private fun sidebarLines(): List<String> {
         val scoreboard = mc.level?.scoreboard ?: return emptyList()
         val objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return emptyList()
-        val title = objective.displayName.string.replace(colorCodes, "")
-        val entries = scoreboard.listPlayerScores(objective).map { it.ownerName().string.replace(colorCodes, "") }
+        val title = plain(objective.displayName.string)
+        val entries = scoreboard.listPlayerScores(objective).map { entry ->
+            val team = scoreboard.getPlayerTeam(entry.owner())
+            val text = PlayerTeam.formatNameForTeam(team, entry.ownerName())
+            plain(text.string)
+        }
         return listOf(title) + entries
     }
+
+    private fun plain(line: String) = line.replace(colorCodes, "")
 
     enum class DungeonClass {
         ARCHER, BERSERK, HEALER, MAGE, TANK;

@@ -1,7 +1,12 @@
 package com.ratons.commands
 
 import com.ratons.Ratons
+import com.ratons.config.AutoRefillConfig
 import com.ratons.config.ConfigManager
+import com.ratons.config.DungeonsConfig
+import com.ratons.config.MiscConfig
+import com.ratons.config.PartyFinderConfig
+import com.ratons.config.RatConfig
 import com.ratons.features.misc.update.UpdateManager
 import com.ratons.utils.ChatUtils
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -18,73 +23,73 @@ object RatCommands {
         Toggle(
             "relictimer",
             "Dungeons > Relic Spawn Timer",
-            read = { it.dungeons.relicSpawnTimer },
-            write = { c, on -> c.copy(dungeons = c.dungeons.copy(relicSpawnTimer = on)) },
+            read = { DungeonsConfig.relicSpawnTimer },
+            write = { on -> DungeonsConfig.relicSpawnTimer = on },
         ),
         Toggle(
             "closechest",
             "Dungeons > Close Secret Chest",
-            read = { it.dungeons.closeSecretChest },
-            write = { c, on -> c.copy(dungeons = c.dungeons.copy(closeSecretChest = on)) },
+            read = { DungeonsConfig.closeSecretChest },
+            write = { on -> DungeonsConfig.closeSecretChest = on },
         ),
         Toggle(
             "autorefill",
             "Instances > Auto Refill",
-            read = { it.autoRefill.enabled },
-            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(enabled = on)) },
+            read = { AutoRefillConfig.enabled },
+            write = { on -> AutoRefillConfig.enabled = on },
         ),
         Toggle(
             "refillpearls",
             "Instances > Auto Refill > Ender Pearls",
-            read = { it.autoRefill.pearls },
-            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(pearls = on)) },
+            read = { AutoRefillConfig.pearls },
+            write = { on -> AutoRefillConfig.pearls = on },
         ),
         Toggle(
             "refilldecoys",
             "Instances > Auto Refill > Decoys",
-            read = { it.autoRefill.decoys },
-            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(decoys = on)) },
+            read = { AutoRefillConfig.decoys },
+            write = { on -> AutoRefillConfig.decoys = on },
         ),
         Toggle(
             "refilljerrys",
             "Instances > Auto Refill > Inflatable Jerrys",
-            read = { it.autoRefill.jerrys },
-            write = { c, on -> c.copy(autoRefill = c.autoRefill.copy(jerrys = on)) },
+            read = { AutoRefillConfig.jerrys },
+            write = { on -> AutoRefillConfig.jerrys = on },
         ),
         Toggle(
             "partyfinder",
             "Instances > Party Size Display",
-            read = { it.partyFinder.partySizeDisplay },
-            write = { c, on -> c.copy(partyFinder = c.partyFinder.copy(partySizeDisplay = on)) },
+            read = { PartyFinderConfig.partySizeDisplay },
+            write = { on -> PartyFinderConfig.partySizeDisplay = on },
         ),
         Toggle(
             "dungeonitemdata",
             "Misc > Dungeon Item Data",
-            read = { it.misc.dungeonItemData },
-            write = { c, on -> c.copy(misc = c.misc.copy(dungeonItemData = on)) },
+            read = { MiscConfig.dungeonItemData },
+            write = { on -> MiscConfig.dungeonItemData = on },
         ),
         Toggle(
             "itemagedata",
             "Misc > Item Age Data",
-            read = { it.misc.itemAgeData },
-            write = { c, on -> c.copy(misc = c.misc.copy(itemAgeData = on)) },
+            read = { MiscConfig.itemAgeData },
+            write = { on -> MiscConfig.itemAgeData = on },
         ),
-        Toggle("autoupdates", "About > Auto Updates", read = { it.autoUpdates }, write = { c, on -> c.copy(autoUpdates = on) }),
-        Toggle("debug", "About > Debug", read = { it.debug }, write = { c, on -> c.copy(debug = on) }),
+        Toggle("autoupdates", "About > Auto Updates", read = { RatConfig.autoUpdates }, write = { on -> RatConfig.autoUpdates = on }),
+        Toggle("debug", "About > Debug", read = { RatConfig.debug }, write = { on -> RatConfig.debug = on }),
     ).associateBy { it.name }
 
     private class Toggle(
         val name: String,
         val label: String,
-        val read: (com.ratons.config.RatConfig) -> Boolean,
-        val write: (com.ratons.config.RatConfig, Boolean) -> com.ratons.config.RatConfig,
+        val read: () -> Boolean,
+        val write: (Boolean) -> Unit,
     )
 
     fun register() {
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(
                 literal("rat").executes {
-                    listFeatures()
+                    ConfigManager.openScreen(null)
                     1
                 }.then(
                     literal("status").executes {
@@ -126,7 +131,7 @@ object RatCommands {
     private fun listFeatures() {
         ChatUtils.chat("§e${Ratons.MOD_NAME} ${Ratons.version} §7features:")
         toggles.values.forEach { toggle ->
-            val state = if (toggle.read(ConfigManager.config)) "§aenabled" else "§7disabled"
+            val state = if (toggle.read()) "§aenabled" else "§7disabled"
             ChatUtils.clickable("§7 - §f${toggle.name} §8(${toggle.label}) §8- $state", "/rat toggle ${toggle.name}")
         }
     }
@@ -145,8 +150,9 @@ object RatCommands {
             ChatUtils.userError("Unknown feature '$feature'. Try /rat for the list.")
             return
         }
-        val now = !toggle.read(ConfigManager.config)
-        ConfigManager.update { toggle.write(it, now) }
+        val now = !toggle.read()
+        toggle.write(now)
+        ConfigManager.save()
         ChatUtils.chat("§a${toggle.label} is now ${if (now) "enabled" else "disabled"}.")
     }
 }

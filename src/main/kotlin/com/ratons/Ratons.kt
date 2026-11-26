@@ -2,6 +2,7 @@ package com.ratons
 
 import com.ratons.commands.RatCommands
 import com.ratons.config.ConfigManager
+import com.ratons.config.RatConfig
 import com.ratons.data.ChatEvents
 import com.ratons.data.SkyBlockState
 import com.ratons.features.instances.AutoRefill
@@ -11,6 +12,7 @@ import com.ratons.features.instances.dungeons.RelicSpawnTimer
 import com.ratons.features.misc.ItemDataDisplay
 import com.ratons.features.misc.update.UpdateManager
 import com.ratons.utils.ChatUtils
+import com.ratons.utils.ErrorManager
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -34,10 +36,12 @@ class Ratons : ClientModInitializer {
         ChatEvents.register(::onChat)
 
         ClientTickEvents.END_CLIENT_TICK.register {
-            ticks++
-            RelicSpawnTimer.tick()
-            UpdateManager.onTick()
-            if (ticks % 20 == 0) SkyBlockState.update()
+            ErrorManager.guard("running a client tick") {
+                ticks++
+                RelicSpawnTimer.tick()
+                UpdateManager.onTick()
+                if (ticks % TICKS_PER_STATE_UPDATE == 0) SkyBlockState.update()
+            }
         }
 
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
@@ -51,10 +55,12 @@ class Ratons : ClientModInitializer {
     private fun onChat(message: String) {
         if (message.contains("Starting a new dungeon")) AutoRefill.onDungeonStart()
         if (message.contains("I will go and fish up Kuudra")) AutoRefill.onKuudraStart()
-        if (ConfigManager.config.debug) ChatUtils.debug("chat: $message")
+        if (RatConfig.debug) ChatUtils.debug("chat: $message")
     }
 
     companion object {
+        private const val TICKS_PER_STATE_UPDATE = 20
+
         const val MOD_ID = "ratons"
         const val MOD_NAME = "Rat-ons"
 
