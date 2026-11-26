@@ -108,6 +108,11 @@ object MiscConfig : CategoryKt("misc") {
         translation = "Item Age Data"
         description = TranslatableValue.literal("Displays an item's age in its lore.")
     }
+
+    var ratCompanion by boolean(true) {
+        translation = "Contributor Rat"
+        description = TranslatableValue.literal("Shows the rat that sits on the head of Rat-ons contributors.")
+    }
 }
 
 object DevConfig : CategoryKt("dev") {

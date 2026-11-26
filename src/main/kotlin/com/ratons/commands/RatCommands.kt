@@ -9,9 +9,11 @@ import com.ratons.config.UpdateMode
 import com.ratons.config.DungeonsConfig
 import com.ratons.config.MiscConfig
 import com.ratons.config.PartyFinderConfig
+import com.ratons.features.misc.rat.RatFreecam
 import com.ratons.features.misc.update.UpdateManager
 import com.ratons.utils.ChatUtils
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.minecraft.client.Minecraft
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal
 
@@ -94,43 +96,52 @@ object RatCommands {
 
     fun register() {
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                literal("rat").executes {
-                    ConfigManager.openScreen(null)
+            val rat = literal("rat").executes {
+                ConfigManager.openScreen(null)
+                1
+            }.then(
+                literal("status").executes {
+                    status()
                     1
-                }.then(
-                    literal("status").executes {
-                        status()
+                },
+            ).then(
+                literal("toggle").then(
+                    argument("feature", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
+                        toggles.keys.filter { it.startsWith(builder.remaining.lowercase()) }.forEach(builder::suggest)
+                        builder.buildFuture()
+                    }.executes { context ->
+                        toggle(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "feature"))
                         1
                     },
-                ).then(
-                    literal("toggle").then(
-                        argument("feature", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
-                            toggles.keys.filter { it.startsWith(builder.remaining.lowercase()) }.forEach(builder::suggest)
-                            builder.buildFuture()
-                        }.executes { context ->
-                            toggle(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "feature"))
-                            1
-                        },
-                    ),
-                ).then(
-                    literal("update").executes {
-                        UpdateManager.checkForUpdates()
-                        ChatUtils.chat("Checking for updates...")
+                ),
+            ).then(
+                literal("update").executes {
+                    UpdateManager.checkForUpdates()
+                    ChatUtils.chat("Checking for updates...")
+                    1
+                },
+            ).then(
+                literal("update-mode").then(
+                    argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
+                        UpdateMode.entries.forEach { builder.suggest(it.name.lowercase()) }
+                        builder.buildFuture()
+                    }.executes { context ->
+                        setUpdateMode(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode"))
                         1
                     },
-                ).then(
-                    literal("update-mode").then(
-                        argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word()).suggests { _, builder ->
-                            UpdateMode.entries.forEach { builder.suggest(it.name.lowercase()) }
-                            builder.buildFuture()
-                        }.executes { context ->
-                            setUpdateMode(com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode"))
-                            1
-                        },
-                    ),
                 ),
             )
+
+            if (DevConfig.debug) {
+                rat.then(
+                    literal("freecam").executes {
+                        RatFreecam.toggle(Minecraft.getInstance())
+                        1
+                    },
+                )
+            }
+
+            dispatcher.register(rat)
 
             dispatcher.register(
                 literal("rathelp").executes {
