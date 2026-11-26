@@ -36,11 +36,11 @@ class Ratons : ClientModInitializer {
         ChatEvents.register(::onChat)
 
         ClientTickEvents.END_CLIENT_TICK.register {
-            ErrorManager.guard("running a client tick") {
-                ticks++
-                RelicSpawnTimer.tick()
-                UpdateManager.onTick()
-                if (ticks % TICKS_PER_STATE_UPDATE == 0) SkyBlockState.update()
+            ticks++
+            ErrorManager.guard("updating the relic timer") { RelicSpawnTimer.tick() }
+            ErrorManager.guard("checking for updates") { UpdateManager.onTick() }
+            if (ticks % TICKS_PER_STATE_UPDATE == 0) {
+                ErrorManager.guard("reading the SkyBlock state") { SkyBlockState.update() }
             }
         }
 

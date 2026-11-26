@@ -43,10 +43,7 @@ object ConfigManager {
         if (!Files.exists(path)) return null
         val raw = runCatching { JsonParser.parseString(Files.readString(path)).asJsonObject }.getOrNull() ?: return null
         if (!raw.has("instancesConfig") && !raw.has("about")) return null
-        runCatching {
-            Files.copy(path, path.resolveSibling("config.json.legacy"), StandardCopyOption.REPLACE_EXISTING)
-        }.onFailure { Ratons.logger.warn("Could not back up the legacy config", it) }
-        Ratons.logger.info("Migrating the 1.8.9 config; the original is kept as config.json.legacy")
+        Ratons.logger.info("Migrating the 1.8.9 config")
         return raw
     }
 
@@ -77,5 +74,17 @@ object ConfigManager {
         flag("misc", "dungeonItemData")?.let { MiscConfig.dungeonItemData = it }
         flag("misc", "itemAgeData")?.let { MiscConfig.itemAgeData = it }
         save()
+        // Resourceful Config writes config.jsonc, so the old file has to be moved out of the
+        // way. Leaving it there would re-run this migration on every launch and overwrite
+        // whatever the player has changed since.
+        // Resourceful Config sometimes consumes the old file itself when it converts to
+        // .jsonc, so a missing source here is success, not a failure.
+        if (Files.exists(path)) {
+            runCatching {
+                Files.move(path, path.resolveSibling("config.json.legacy"), StandardCopyOption.REPLACE_EXISTING)
+            }.onSuccess {
+                Ratons.logger.info("Migrated the 1.8.9 config; the original is now config.json.legacy")
+            }.onFailure { Ratons.logger.warn("Could not set aside the legacy config", it) }
+        }
     }
 }

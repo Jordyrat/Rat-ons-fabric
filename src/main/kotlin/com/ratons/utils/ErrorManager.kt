@@ -9,10 +9,20 @@ import com.ratons.Ratons
  */
 object ErrorManager {
 
+    private const val REPEAT_INTERVAL_MILLIS = 30_000L
+    private val lastReported = mutableMapOf<String, Long>()
+
     fun logErrorWithData(error: Throwable, userMessage: String, vararg extraData: Pair<String, Any?>) {
         val details = extraData.joinToString { (key, value) -> "$key=$value" }
         Ratons.logger.error("$userMessage $details", error)
-        ChatUtils.userError("$userMessage Please report this with the log.")
+        // A failure that repeats every tick would otherwise flood chat; one line per cause
+        // per half minute is enough for the player to notice and report it.
+        val now = System.nanoTime()
+        val last = lastReported[userMessage]
+        if (last == null || now - last > REPEAT_INTERVAL_MILLIS * 1_000_000L) {
+            lastReported[userMessage] = now
+            ChatUtils.userError("$userMessage Please report this with the log.")
+        }
     }
 
     fun logErrorStateWithData(userMessage: String, internalMessage: String, vararg extraData: Pair<String, Any?>) {
