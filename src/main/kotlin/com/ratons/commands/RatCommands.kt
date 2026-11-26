@@ -163,7 +163,7 @@ object RatCommands {
 
     private fun setUpdateMode(value: String) {
         val mode = UpdateMode.entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: run {
-            ChatUtils.userError("Unknown mode '$value'. Use none, chat or automatic.")
+            ChatUtils.userError("Unknown mode '$value'. Use none, notify or automatic.")
             return
         }
         RatConfig.updateMode = mode

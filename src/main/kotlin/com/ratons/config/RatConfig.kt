@@ -13,7 +13,7 @@ import com.teamresourceful.resourcefulconfigkt.api.ConfigKt
 /** What the launch-time update check is allowed to do. */
 enum class UpdateMode {
     None,
-    Chat,
+    Notify,
     Automatic,
 }
 
@@ -27,7 +27,7 @@ object RatConfig : ConfigKt("ratons/config") {
     var updateMode by enum(UpdateMode.Automatic) {
         translation = "Update Mode"
         description = TranslatableValue.literal(
-            "None skips the update check, Chat tells you when a release is out, " +
+            "None skips the update check, Notify tells you when a release is out, " +
                 "Automatic installs it when you close the game.",
         )
     }
