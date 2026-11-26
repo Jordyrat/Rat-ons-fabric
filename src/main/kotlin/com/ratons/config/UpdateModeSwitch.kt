@@ -45,7 +45,6 @@ class UpdateModeSwitch(
 
         UpdateMode.entries.forEachIndexed { index, mode ->
             val left = x + index * SEGMENT_WIDTH
-            val hovered = mouseX in left until left + SEGMENT_WIDTH && mouseY in y until y + height
             BooleanOptionWidget.extractCenteredString(
                 graphics,
                 font,
@@ -53,7 +52,7 @@ class UpdateModeSwitch(
                 left + SEGMENT_WIDTH / 2,
                 y + 4,
                 if (mode == current) ACTIVE_TEXT else IDLE_TEXT,
-                hovered && mode == current,
+                false,
             )
         }
     }

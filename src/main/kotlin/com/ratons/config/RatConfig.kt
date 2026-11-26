@@ -24,7 +24,7 @@ object RatConfig : ConfigKt("ratons/config") {
         TranslatableValue.literal("Hypixel SkyBlock quality-of-life features")
     override val links: Array<ResourcefulConfigLink> = emptyArray()
 
-    var updateMode by enum(UpdateMode.Automatic) {
+    var updateMode by enum(UpdateMode.Notify) {
         translation = "Update Mode"
         renderer = UpdateModeRenderer.id
         description = TranslatableValue.literal(

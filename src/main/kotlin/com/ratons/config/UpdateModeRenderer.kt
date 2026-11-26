@@ -41,7 +41,7 @@ object UpdateModeRenderer {
             val value = value ?: return emptyList()
             return listOf(
                 UpdateModeSwitch(
-                    getter = { value.getEnum() as? UpdateMode ?: UpdateMode.Automatic },
+                    getter = { value.getEnum() as? UpdateMode ?: UpdateMode.Notify },
                     setter = { value.setEnum(it) },
                 ),
             )
