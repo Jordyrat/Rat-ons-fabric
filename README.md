@@ -3,9 +3,9 @@
 <div align="center">
     
 [![Made with Kotlin](https://img.shields.io/badge/Made%20With-Kotlin-purple?style=for-the-badge&logo=kotlin&logocolor=white&color=7F52FF)](https://kotlinlang.org/)
-[![Downloads](https://badgen.net/github/assets-dl/Jordyrat/Rat-ons-fabric)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
-[![Version](https://img.shields.io/badge/Version-2.0.0-blue?style=for-the-badge)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
-[![License](https://img.shields.io/badge/License-LGPL%202.1-blue?style=for-the-badge)](LICENSE)
+[![Downloads](https://img.shields.io/badge/Downloads-0-green?style=for-the-badge&logo=github)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue?style=for-the-badge&logo=github)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![License](https://img.shields.io/badge/License-LGPL%202.1-blue?style=for-the-badge&logo=gnu)](LICENSE)
 
 </div>
 
