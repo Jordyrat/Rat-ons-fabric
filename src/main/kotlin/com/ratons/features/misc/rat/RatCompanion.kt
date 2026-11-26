@@ -34,20 +34,42 @@ import kotlin.math.sin
  */
 object RatCompanion {
 
-    val TEXTURE: Identifier = Identifier.parse("ratons:textures/entity/rat.png")
+    /**
+     * Real rat varieties, each with its own sheet: fur, then ears and tail, eyes and belly.
+     *
+     * The breeds to pick from, when adding someone below:
+     *
+     * - [Agouti]    wild brown-grey, the colour of a common fancy rat
+     * - [Albino]    white coat, pink eyes
+     * - [Hooded]    white body with a coloured head and a saddle down the back
+     * - [Black]     near-black coat, ruby eyes
+     * - [Blue]      slate grey-blue
+     * - [Himalayan] cream coat with dark points on the face, ears and tail
+     */
+    enum class RatBreed(file: String) {
+        Agouti("rat_agouti"),
+        Albino("rat_albino"),
+        Hooded("rat_hooded"),
+        Black("rat_black"),
+        Blue("rat_blue"),
+        Himalayan("rat_himalayan"),
+        ;
 
-    /** Contributors, by UUID, who carry the rat. */
-    private val CONTRIBUTORS = setOf(
-        UUID.fromString("45726bfa-4aee-402b-952c-93a1dece512e"), // Jordyrat
-        UUID.fromString("2cbd42c9-ef29-424b-8663-155d68c1df4b"), // xJordyrat
+        val texture: Identifier = Identifier.parse("ratons:textures/entity/$file.png")
+    }
+
+    /** Contributors, by UUID, and the breed of rat they carry. */
+    private val CONTRIBUTORS: Map<UUID, RatBreed> = mapOf(
+        UUID.fromString("45726bfa-4aee-402b-952c-93a1dece512e") to RatBreed.Hooded, // Jordyrat
+        UUID.fromString("2cbd42c9-ef29-424b-8663-155d68c1df4b") to RatBreed.Agouti, // xJordyrat
     )
 
     internal const val FULL_BRIGHT = 0xF000F0
 
     private const val ALERT_MIN_TICKS = 180
     private const val ALERT_SPREAD_TICKS = 60
-    private const val SETTLED_MIN_TICKS = 240
-    private const val SETTLED_SPREAD_TICKS = 240
+    private const val LYING_MIN_TICKS = 240
+    private const val LYING_SPREAD_TICKS = 240
 
     private val states = ConcurrentHashMap<UUID, RatState>()
     internal val model: RatModel by lazy { RatModel() }
@@ -57,7 +79,7 @@ object RatCompanion {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
     }
 
-    internal fun carries(uuid: UUID): Boolean = uuid in CONTRIBUTORS
+    internal fun breedOf(uuid: UUID): RatBreed? = CONTRIBUTORS[uuid]
 
     internal fun snapshotFor(uuid: UUID): Snapshot {
         if (!announced) {
@@ -75,13 +97,13 @@ object RatCompanion {
         }
     }
 
-    private enum class Mode { Settled, Alert }
+    private enum class Mode { Lying, Alert }
 
     /** The animated state of one rat, advanced a tick at a time and read once per frame. */
     internal class RatState {
-        private var mode = Mode.Settled
-        private var modeTicks = SETTLED_MIN_TICKS + (0..SETTLED_SPREAD_TICKS).random()
-        private var sitAmount = 0f
+        private var mode = Mode.Lying
+        private var modeTicks = LYING_MIN_TICKS + (0..LYING_SPREAD_TICKS).random()
+        private var alertness = 0f
 
         private var lookYaw = 0f
         private var lookPitch = 0f
@@ -97,7 +119,7 @@ object RatCompanion {
             if (--modeTicks <= 0) nextMode()
 
             val targetSit = if (mode == Mode.Alert) 1f else 0f
-            sitAmount += (targetSit - sitAmount) * 0.18f
+            alertness += (targetSit - alertness) * 0.18f
 
             if (--lookTicks <= 0) pickLookTarget()
 
@@ -114,12 +136,12 @@ object RatCompanion {
 
         private fun nextMode() {
             mode = when (mode) {
-                Mode.Settled -> if ((0..2).random() == 0) Mode.Alert else Mode.Settled
-                Mode.Alert -> Mode.Settled
+                Mode.Lying -> if ((0..2).random() == 0) Mode.Alert else Mode.Lying
+                Mode.Alert -> Mode.Lying
             }
             modeTicks = when (mode) {
                 Mode.Alert -> ALERT_MIN_TICKS + (0..ALERT_SPREAD_TICKS).random()
-                Mode.Settled -> SETTLED_MIN_TICKS + (0..SETTLED_SPREAD_TICKS).random()
+                Mode.Lying -> LYING_MIN_TICKS + (0..LYING_SPREAD_TICKS).random()
             }
             if (mode == Mode.Alert) {
                 targetYaw = 0f
@@ -133,11 +155,11 @@ object RatCompanion {
             targetPitch = ((0..30).random() - 15) / 100f
         }
 
-        fun snapshot() = Snapshot(sitAmount, lookYaw, lookPitch, earTilt, sin(tailPhase) * 0.25f)
+        fun snapshot() = Snapshot(alertness, lookYaw, lookPitch, earTilt, sin(tailPhase) * 0.25f)
     }
 
     internal class Snapshot(
-        val sitAmount: Float,
+        val alertness: Float,
         val lookYaw: Float,
         val lookPitch: Float,
         val earTilt: Float,
@@ -162,27 +184,27 @@ object RatCompanion {
         private val backRight = body.getChild("back_right")
 
         fun pose(snapshot: Snapshot) {
-            val sit = snapshot.sitAmount
+            val alert = snapshot.alertness
 
-            body.xRot = 0.5f * sit
-            body.y = -0.3f * sit
+            body.xRot = 0.5f * alert
+            body.y = -0.3f * alert
 
-            head.xRot = -0.35f * sit + snapshot.lookPitch
+            head.xRot = -0.35f * alert + snapshot.lookPitch
             head.yRot = snapshot.lookYaw
 
             earLeft.zRot = -snapshot.earTilt
             earRight.zRot = snapshot.earTilt
 
-            tail.xRot = 0.35f * sit + 0.15f
+            tail.xRot = 0.35f * alert + 0.15f
             tail.yRot = snapshot.tailSway
 
-            val fold = 1.25f * sit
+            val fold = 1.25f * alert
             backLeft.xRot = fold
             backRight.xRot = fold
-            frontLeft.xRot = -1.05f * sit
-            frontRight.xRot = -1.05f * sit
-            frontLeft.zRot = -0.25f * sit
-            frontRight.zRot = 0.25f * sit
+            frontLeft.xRot = -1.05f * alert
+            frontRight.xRot = -1.05f * alert
+            frontLeft.zRot = -0.25f * alert
+            frontRight.zRot = 0.25f * alert
         }
 
         private companion object {
@@ -307,7 +329,8 @@ class RatShoulderLayer(parent: RenderLayerParent<AvatarRenderState, PlayerModel>
         xRot: Float,
     ) {
         val rider = (state as? RatRiderHolder)?.`ratons$getRider`() ?: return
-        if (!RatCompanion.carries(rider) || state.isInvisible) return
+        if (state.isInvisible) return
+        val breed = RatCompanion.breedOf(rider) ?: return
 
         if (!MiscConfig.ratCompanion) return
         val snapshot = RatCompanion.snapshotFor(rider)
@@ -318,7 +341,7 @@ class RatShoulderLayer(parent: RenderLayerParent<AvatarRenderState, PlayerModel>
             poseStack.translate(0f, -HEAD_TOP, HEAD_BACK)
             poseStack.scale(1f, -1f, 1f)
             poseStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE)
-            collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(RatCompanion.TEXTURE, false)) { pose, consumer ->
+            collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(breed.texture, false)) { pose, consumer ->
                 val local = PoseStack()
                 local.last().set(pose)
                 RatCompanion.model.pose(snapshot)
