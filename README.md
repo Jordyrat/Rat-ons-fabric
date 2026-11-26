@@ -3,8 +3,8 @@
 <div align="center">
     
 [![Made with Kotlin](https://img.shields.io/badge/Made%20With-Kotlin-purple?style=for-the-badge&logo=kotlin&logocolor=white&color=7F52FF)](https://kotlinlang.org/)
-[![Downloads](https://img.shields.io/github/downloads/Jordyrat/Rat-ons-fabric/total?style=for-the-badge&logo=github&color=green)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
-[![Version](https://img.shields.io/github/v/release/Jordyrat/Rat-ons-fabric?include_prereleases&display_name=release&style=for-the-badge&label=Version&color=blue)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![Downloads](https://img.shields.io/github/downloads/Jordyrat/Rat-ons-fabric/total?style=for-the-badge&color=green)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
+[![Version](https://img.shields.io/github/v/release/Jordyrat/Rat-ons-fabric?style=for-the-badge&label=Version)](https://github.com/Jordyrat/Rat-ons-fabric/releases)
 [![License](https://img.shields.io/github/license/Jordyrat/Rat-ons-fabric?style=for-the-badge&label=License)](LICENSE)
 
 </div>
